@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ShoppingBag, ShoppingCart, Utensils } from "lucide-react";
+import { ShoppingBag, ShoppingCart, Utensils, X } from "lucide-react";
 import type { MenuItem, LineItemCustomization } from "@/lib/types";
 import { HIGHBALL_LEMON_SURCHARGE_VND } from "@/lib/drink-pricing";
 import {
@@ -187,29 +187,29 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
         className="flex max-h-[min(96dvh,100dvh)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-gray-100 bg-white shadow-2xl sm:max-h-[min(96vh,880px)] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mt-1.5 h-0.5 w-10 shrink-0 rounded-full bg-emerald-300/90 sm:hidden" />
+        <div className="mx-auto mt-2 h-1 w-11 shrink-0 rounded-full bg-emerald-300/90 sm:hidden" />
 
-        {/* Header: gọn tối đa — vùng giữa flex-1 được nhiều chiều cao hơn */}
-        <div className="shrink-0 border-b border-gray-100 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/60 px-4 pt-2.5 pb-2.5 sm:px-5 sm:pt-3 sm:pb-3">
-          <div className="flex items-start justify-between gap-2.5 sm:gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-500 sm:text-[10px] sm:tracking-[0.18em]">
+        {/* Header: chỉ khối trên — rộng/rõ hơn một chút; giữa & dưới không đổi */}
+        <div className="shrink-0 border-b border-gray-100 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/60 px-4 pt-3.5 pb-3.5 sm:px-6 sm:pt-4 sm:pb-4">
+          <div className="flex items-start justify-between gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1 pr-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-500 sm:text-[11px] sm:tracking-[0.2em]">
                 Add to order
               </p>
-              <h2 className="mt-0.5 text-base font-bold leading-tight tracking-tight text-gray-900 sm:mt-1 sm:text-lg">
+              <h2 className="mt-1 text-lg font-bold leading-tight tracking-tight text-gray-900 sm:text-xl">
                 {item.nameVi ?? item.name}
               </h2>
               {item.description && (
-                <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-gray-500 sm:mt-1 sm:line-clamp-none sm:text-[13px] sm:leading-snug md:text-sm md:leading-relaxed">
+                <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-gray-500 sm:line-clamp-none sm:text-sm sm:leading-relaxed">
                   {item.description}
                 </p>
               )}
-              <p className="mt-1 text-[13px] font-semibold leading-none text-amber-600 sm:text-sm sm:font-semibold md:text-base">
+              <p className="mt-1.5 text-sm font-semibold leading-none text-amber-600 sm:mt-2 sm:text-base">
                 {yenLabel(unitPrice)}
-                <span className="ml-1 text-[10px] font-normal text-gray-400 sm:text-[11px] md:text-xs">/ item</span>
+                <span className="ml-1 text-[11px] font-normal text-gray-400 sm:text-xs">/ item</span>
               </p>
             </div>
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-amber-200/60 bg-gradient-to-br from-amber-50 to-amber-100/80 shadow-inner sm:h-[4.5rem] sm:w-[4.5rem] sm:rounded-xl md:rounded-2xl">
+            <div className="relative h-[4.75rem] w-[4.75rem] shrink-0 overflow-hidden rounded-xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-amber-100/80 shadow-inner sm:h-24 sm:w-24 sm:rounded-2xl">
               {item.imageUrl ? (
                 <img
                   src={item.imageUrl}
@@ -226,10 +226,14 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
             <button
               type="button"
               onClick={onClose}
-              className="-mr-0.5 shrink-0 rounded-full p-1.5 text-xs text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 sm:p-2 sm:text-sm"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gray-200/90 bg-white text-gray-700 shadow-[0_2px_10px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04] transition hover:border-emerald-200/90 hover:bg-emerald-50/90 hover:text-emerald-900 active:scale-[0.96] sm:h-auto sm:w-auto sm:border-0 sm:bg-transparent sm:p-2 sm:text-gray-400 sm:shadow-none sm:ring-0 sm:hover:bg-gray-100 sm:hover:text-gray-700"
               aria-label="Close"
             >
-              ✕
+              <X
+                className="h-7 w-7 sm:h-5 sm:w-5"
+                strokeWidth={2.35}
+                aria-hidden
+              />
             </button>
           </div>
         </div>
