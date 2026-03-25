@@ -226,14 +226,10 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
             <button
               type="button"
               onClick={onClose}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gray-200/90 bg-white text-gray-700 shadow-[0_2px_10px_rgba(15,23,42,0.08)] ring-1 ring-black/[0.04] transition hover:border-emerald-200/90 hover:bg-emerald-50/90 hover:text-emerald-900 active:scale-[0.96] sm:h-auto sm:w-auto sm:border-0 sm:bg-transparent sm:p-2 sm:text-gray-400 sm:shadow-none sm:ring-0 sm:hover:bg-gray-100 sm:hover:text-gray-700"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100/90 sm:h-auto sm:w-auto sm:p-2.5"
               aria-label="Close"
             >
-              <X
-                className="h-7 w-7 sm:h-5 sm:w-5"
-                strokeWidth={2.35}
-                aria-hidden
-              />
+              <X className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
             </button>
           </div>
         </div>
