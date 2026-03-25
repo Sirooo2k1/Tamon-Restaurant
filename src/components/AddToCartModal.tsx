@@ -497,18 +497,16 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
             </div>
           )}
 
-          {/* トッピング / Extras */}
+          {/* トッピング / Extras — card & chip giống 麺の量 150g/200g (xanh nhạt) */}
           {item.options && item.options.length > 0 && (
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/30 p-3.5 sm:p-4">
-              <div className="mb-1.5 flex items-baseline justify-between gap-2">
-                <p className="text-xs font-semibold text-gray-700">
-                  トッピング <span className="text-[11px] text-gray-400">/ Extras</span>
+            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3.5 sm:p-4">
+              <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                <p className="text-xs font-semibold text-gray-800">
+                  トッピング <span className="ml-1 text-[11px] font-normal text-gray-500">/ Extras</span>
                 </p>
-                <p className="text-[10px] text-gray-400">
-                  麺類におすすめの追加トッピングです。
-                </p>
+                <p className="text-[10px] text-gray-500">麺類におすすめの追加トッピングです。</p>
               </div>
-              <div className="space-y-1.5">
+              <div className="flex flex-col gap-2">
                 {item.options.map((opt) => {
                   const selected = selectedExtras.some((e) => e.optionId === opt.id);
                   return (
@@ -516,16 +514,18 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
                       key={opt.id}
                       type="button"
                       onClick={() => toggleExtra(opt)}
-                      className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 text-sm transition ${
+                      className={`flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-left text-sm font-semibold transition ${
                         selected
-                          ? "border-emerald-300 bg-white ring-1 ring-emerald-200/60"
-                          : "border-amber-100 bg-white/70 hover:border-emerald-200 hover:bg-emerald-50/40"
+                          ? "border-emerald-200 bg-emerald-200/90 text-emerald-900 shadow-sm ring-2 ring-emerald-100/80"
+                          : "border-emerald-100 bg-white text-gray-800 hover:border-emerald-200 hover:bg-emerald-50/80"
                       }`}
                     >
-                      <span className="min-w-0 flex-1 text-left font-medium leading-snug text-gray-800">
-                        {formatOptionLabel(opt)}
-                      </span>
-                      <span className="shrink-0 text-sm font-semibold text-emerald-600">
+                      <span className="min-w-0 flex-1 leading-snug">{formatOptionLabel(opt)}</span>
+                      <span
+                        className={`shrink-0 tabular-nums font-semibold ${
+                          selected ? "text-emerald-900" : "text-emerald-700"
+                        }`}
+                      >
                         +{yenLabel(opt.price)}
                       </span>
                     </button>
