@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { CUSTOMER_HERO_GRADIENT, customerHeroShellClassName } from "@/lib/customer-hero-gradient";
 import { clearTrackedOrderOnServer } from "@/lib/recent-order-tracking";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
+import { displayMenuItemNameJa } from "@/lib/menu-display";
 
 function stripGuestKeyFromUrl(): void {
   if (typeof window === "undefined") return;
@@ -563,7 +564,7 @@ export function OrderTrackingExperience({
                     <div className="min-w-0 flex-1 pl-1 sm:pl-1.5">
                       <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
                         <p className="text-sm font-semibold leading-snug tracking-tight text-gray-900">
-                          {line.menu_item_name}
+                          {displayMenuItemNameJa(line.menu_item_id, line.menu_item_name)}
                           <span className="ml-1 font-medium tabular-nums text-gray-500">×{line.quantity}</span>
                         </p>
                         {noodleLine && (

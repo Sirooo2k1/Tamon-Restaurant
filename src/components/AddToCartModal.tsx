@@ -130,7 +130,7 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
     setSelectedExtras((prev) => {
       const exists = prev.find((e) => e.optionId === opt.id);
       if (exists) return prev.filter((e) => e.optionId !== opt.id);
-      return [...prev, { optionId: opt.id, name: formatOptionLabel(opt), price: opt.price }];
+      return [...prev, { optionId: opt.id, name: opt.name, price: opt.price }];
     });
   };
 

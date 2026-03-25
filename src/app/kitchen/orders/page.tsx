@@ -7,6 +7,7 @@
 import { Suspense, useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useOrders } from "@/hooks/use-orders";
+import { displayMenuItemNameJa } from "@/lib/menu-display";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import type { OrderRecord, OrderStatus, LineItemCustomization, OrderItemPayload } from "@/lib/types";
 import { getLineFulfillmentStatus } from "@/lib/order-line-fulfillment";
@@ -75,10 +76,23 @@ function formatElapsed(iso: string): string {
   return `${h}時間${min % 60}分前`;
 }
 
+const SPICE_LABEL_JA: Record<string, string> = {
+  mild: "マイルド",
+  medium: "ミディアム",
+  hot: "辛口",
+  extra_hot: "特辛",
+};
+
+const NOODLE_FIRM_LABEL_JA: Record<string, string> = {
+  soft: "やわらかめ",
+  medium: "普通",
+  firm: "硬め",
+};
+
 function formatCustomization(c: LineItemCustomization | undefined): string | null {
   if (!c) return null;
   const parts: string[] = [];
-  if (c.seatLabel?.trim()) parts.push(`席${c.seatLabel.trim()}`);
+  if (c.seatLabel?.trim()) parts.push(`お席: ${c.seatLabel.trim()}`);
   const noodleLine = formatNoodlePortionLineJa(c);
   if (noodleLine) parts.push(noodleLine);
   if (c.beerVariant) {
@@ -96,9 +110,15 @@ function formatCustomization(c: LineItemCustomization | undefined): string | nul
     parts.push(c.serviceMode === "takeaway" ? "お持ち帰り" : "店内");
   }
   if (c.note?.trim()) parts.push(c.note.trim());
-  if (c.spiceLevel && c.spiceLevel !== "none") parts.push(`辛さ: ${c.spiceLevel}`);
-  if (c.noodleFirmness) parts.push(`麺: ${c.noodleFirmness}`);
-  if (c.extraToppings?.length) parts.push(c.extraToppings.map((t) => t.name).join(", "));
+  if (c.spiceLevel && c.spiceLevel !== "none") {
+    const sj = SPICE_LABEL_JA[c.spiceLevel];
+    parts.push(sj ? `辛さ: ${sj}` : `辛さ: ${c.spiceLevel}`);
+  }
+  if (c.noodleFirmness) {
+    const fj = NOODLE_FIRM_LABEL_JA[c.noodleFirmness];
+    parts.push(fj ? `麺の硬さ: ${fj}` : `麺の硬さ: ${c.noodleFirmness}`);
+  }
+  if (c.extraToppings?.length) parts.push(c.extraToppings.map((t) => t.name).join("、"));
   return parts.length > 0 ? parts.join(" · ") : null;
 }
 
@@ -707,6 +727,7 @@ function OrdersPageInner() {
                         const isDelivered = getLineFulfillmentStatus(item) === "delivered";
                         const rowKey = `${order.id}-${idx}`;
                         const lineBusy = linePatchKey === rowKey;
+                        const lineNameJa = displayMenuItemNameJa(item.menu_item_id, item.menu_item_name);
                         return (
                           <li
                             key={rowKey}
@@ -714,7 +735,7 @@ function OrdersPageInner() {
                           >
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium text-gray-800">
-                                {item.menu_item_name}
+                                {lineNameJa}
                                 <span className="ml-1 font-normal text-gray-500">×{item.quantity}</span>
                               </p>
                               {custom && (
@@ -731,8 +752,8 @@ function OrdersPageInner() {
                                 aria-checked={isDelivered}
                                 aria-label={
                                   isDelivered
-                                    ? `${item.menu_item_name}：お席へ未提供に戻す`
-                                    : `${item.menu_item_name}：お席へ提供済み`
+                                    ? `${lineNameJa}：お席へ未提供に戻す`
+                                    : `${lineNameJa}：お席へ提供済み`
                                 }
                                 disabled={lineBusy || isPatching}
                                 onClick={() => handleLineFulfillmentToggle(order, idx)}
@@ -1002,11 +1023,12 @@ function OrdersPageInner() {
                   {(activeModal.order.items as OrderItemPayload[]).map((item, idx) => {
                     const custom = formatCustomization(item.customization);
                     const lineTotal = item.unit_price * item.quantity;
+                    const lineNameJa = displayMenuItemNameJa(item.menu_item_id, item.menu_item_name);
                     return (
                       <li key={idx} className="border-b border-gray-50 pb-2 text-sm last:border-0 last:pb-0">
                         <div className="flex justify-between gap-2 font-medium text-gray-800">
                           <span>
-                            {item.menu_item_name}
+                            {lineNameJa}
                             <span className="ml-1 text-gray-500">×{item.quantity}</span>
                           </span>
                           <span className="shrink-0 text-emerald-700">¥{toYen(lineTotal)}</span>

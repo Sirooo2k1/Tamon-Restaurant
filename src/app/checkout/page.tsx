@@ -35,9 +35,24 @@ import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 
 const toYen = (vnd: number) => Math.round(vnd / 200);
 
+const SPICE_LABEL_JA: Record<string, string> = {
+  mild: "マイルド",
+  medium: "ミディアム",
+  hot: "辛口",
+  extra_hot: "特辛",
+};
+
+const NOODLE_FIRM_LABEL_JA: Record<string, string> = {
+  soft: "やわらかめ",
+  medium: "普通",
+  firm: "硬め",
+};
+
 function formatCustomization(customization: LineItemCustomization): string | null {
   const parts: string[] = [];
-  if (customization.seatLabel?.trim()) parts.push(`Seat ${customization.seatLabel.trim()}`);
+  if (customization.seatLabel?.trim()) {
+    parts.push(`お席: ${customization.seatLabel.trim()}`);
+  }
   const noodleLine = formatNoodlePortionLineJa(customization);
   if (noodleLine) parts.push(noodleLine);
   if (customization.beerVariant) {
@@ -65,10 +80,16 @@ function formatCustomization(customization: LineItemCustomization): string | nul
     );
   }
   if (customization.note?.trim()) parts.push(customization.note.trim());
-  if (customization.spiceLevel && customization.spiceLevel !== "none") parts.push(`Spice: ${customization.spiceLevel}`);
-  if (customization.noodleFirmness) parts.push(`Noodles: ${customization.noodleFirmness}`);
+  if (customization.spiceLevel && customization.spiceLevel !== "none") {
+    const sj = SPICE_LABEL_JA[customization.spiceLevel];
+    parts.push(sj ? `辛さ: ${sj}` : `辛さ: ${customization.spiceLevel}`);
+  }
+  if (customization.noodleFirmness) {
+    const fj = NOODLE_FIRM_LABEL_JA[customization.noodleFirmness];
+    parts.push(fj ? `麺の硬さ: ${fj}` : `麺の硬さ: ${customization.noodleFirmness}`);
+  }
   if (customization.extraToppings?.length) {
-    parts.push(customization.extraToppings.map((t) => t.name).join(", "));
+    parts.push(customization.extraToppings.map((t) => t.name).join("、"));
   }
   return parts.length > 0 ? parts.join(" · ") : null;
 }
@@ -204,7 +225,7 @@ export default function CheckoutPage() {
       table_label: tableLabel || null,
       items: items.map((line) => ({
         menu_item_id: line.menuItem.id,
-        menu_item_name: line.menuItem.nameVi ?? line.menuItem.name,
+        menu_item_name: line.menuItem.name,
         menu_category: line.menuItem.category,
         quantity: line.quantity,
         unit_price: line.unitPrice,
@@ -439,7 +460,7 @@ export default function CheckoutPage() {
             className="px-4 py-5 sm:px-6 sm:py-6"
             style={{ background: "linear-gradient(90deg, #ecfdf5 0%, #fffbeb 100%)" }}
           >
-            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600">CHECKOUT</p>
+            <p className="text-xs font-semibold tracking-wider text-emerald-600">ご注文手続き</p>
             <h1 className="mt-1 text-xl font-bold text-gray-800 sm:text-2xl">ご注文内容の確認</h1>
             <p className="mt-0.5 text-sm text-gray-600">カート内 {items.length} 品</p>
           </header>
@@ -488,7 +509,7 @@ export default function CheckoutPage() {
                     >
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-800">
-                          {line.menuItem.nameVi ?? line.menuItem.name}
+                          {line.menuItem.name}
                           <span className="ml-1.5 text-gray-500">× {line.quantity}</span>
                         </p>
                         {customText && (
