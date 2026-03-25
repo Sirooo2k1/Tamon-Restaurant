@@ -195,13 +195,20 @@ export default function CheckoutPage() {
         tableLabel: order.table_label ?? null,
         payment_status: order.payment_status ?? null,
       });
-      const tableOk = tableLabelsMatch(order.table_label, tableLabel);
+      const orderTable = (order.table_label ?? "").trim();
+      const cartTable = (tableLabel ?? "").trim();
+      /** 進捗画面から `/menu` へ戻ると卓が消えることがある → 追跡中の注文の卓で埋めてマージ可能にする */
+      if (orderTable && !cartTable) {
+        setTableLabel(orderTable);
+      }
+      const effectiveCartTable = cartTable || orderTable;
+      const tableOk = tableLabelsMatch(order.table_label, effectiveCartTable);
       setMergeEligible(tableOk && mergeOk);
     } catch {
       setMergeTarget(null);
       setMergeEligible(false);
     }
-  }, [tableLabel]);
+  }, [tableLabel, setTableLabel]);
 
   useEffect(() => {
     void refreshMergeState();

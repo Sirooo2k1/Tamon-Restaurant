@@ -122,7 +122,48 @@ function MenuContent() {
 
   useEffect(() => {
     const table = searchParams.get("table");
-    setTableLabel(table ? tableDisplayLabelFromQrCode(table) : null);
+    if (table) {
+      setTableLabel(tableDisplayLabelFromQrCode(table));
+      return;
+    }
+
+    /** 「進捗→メニュー」は `/menu` のみ（`?table=` なし）→ 卓が消えて決済できなくなる。追跡 cookie があれば DB の table_label で復元 */
+    let cancelled = false;
+    (async () => {
+      try {
+        const tr = await fetch("/api/orders/tracked", {
+          credentials: "include",
+          cache: "no-store",
+        }).then((r) => r.json());
+        if (cancelled) return;
+        if (!tr?.trackingReady || !tr?.orderId) {
+          setTableLabel(null);
+          return;
+        }
+        const ordRes = await fetch(`/api/orders/${tr.orderId}`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        if (cancelled) return;
+        if (!ordRes.ok) {
+          setTableLabel(null);
+          return;
+        }
+        const order = (await ordRes.json()) as { table_label?: string | null };
+        const label = order?.table_label;
+        if (typeof label === "string" && label.trim()) {
+          setTableLabel(label.trim());
+        } else {
+          setTableLabel(null);
+        }
+      } catch {
+        if (!cancelled) setTableLabel(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, setTableLabel]);
 
   useEffect(() => {
