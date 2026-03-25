@@ -9,6 +9,7 @@ import { AddToCartModal } from "@/components/AddToCartModal";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
 import { tableDisplayLabelFromQrCode } from "@/lib/table-display-label";
+import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "ramen" as const, label: "つけ麺・ラーメン" },
@@ -30,17 +31,29 @@ const toYen = (vnd: number) => Math.round(vnd / 200);
 
 function MenuItemRow({
   item,
+  soldOut,
   onAdd,
 }: {
   item: MenuItem;
+  soldOut: boolean;
   onAdd: () => void;
 }) {
   return (
-    <div className="flex gap-4 border-b border-gray-100/80 py-4 last:border-b-0">
+    <div
+      className={cn(
+        "flex gap-4 border-b border-gray-100/80 py-4 last:border-b-0",
+        soldOut && "opacity-75"
+      )}
+    >
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-semibold text-gray-800">{item.name}</h3>
+            {soldOut && (
+              <span className="rounded-full border border-stone-300 bg-stone-100 px-2.5 py-0.5 text-[11px] font-bold text-stone-600">
+                売り切れ
+              </span>
+            )}
             {item.highlight === "popular" && (
               <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
                 人気No.1
@@ -64,13 +77,24 @@ function MenuItemRow({
         <button
           type="button"
           onClick={onAdd}
-          className="mt-3 flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+          disabled={soldOut}
+          className={cn(
+            "mt-3 flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition",
+            soldOut
+              ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+          )}
         >
           <span className="text-base leading-none">+</span>
-          Add to Cart
+          {soldOut ? "注文不可" : "Add to Cart"}
         </button>
       </div>
-      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-amber-200/80 bg-amber-100 sm:h-24 sm:w-24">
+      <div
+        className={cn(
+          "h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-amber-200/80 bg-amber-100 sm:h-24 sm:w-24",
+          soldOut && "grayscale"
+        )}
+      >
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
@@ -91,6 +115,7 @@ function MenuContent() {
   const [activeTab, setActiveTab] = useState<"ramen" | "gyoza_drink">("ramen");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
+  const [soldOutIds, setSoldOutIds] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const setTableLabel = useCartStore((s) => s.setTableLabel);
   const tableLabel = useCartStore((s) => s.tableLabel);
@@ -107,6 +132,44 @@ function MenuContent() {
     }, 2200);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  const soldOutSet = useMemo(() => new Set(soldOutIds), [soldOutIds]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function pull() {
+      try {
+        const res = await fetch(`/api/menu/availability?t=${Date.now()}`, {
+          cache: "no-store",
+        });
+        if (!res.ok || cancelled) return;
+        const j = (await res.json()) as { soldOutIds?: string[] };
+        if (!cancelled) setSoldOutIds(Array.isArray(j.soldOutIds) ? j.soldOutIds : []);
+      } catch {
+        /* keep previous */
+      }
+    }
+    void pull();
+    const t = setInterval(pull, 5000);
+    const onVis = () => {
+      if (document.visibilityState === "visible") void pull();
+    };
+    const onPageShow = () => void pull();
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedItem && soldOutSet.has(selectedItem.id)) {
+      setSelectedItem(null);
+    }
+  }, [selectedItem, soldOutSet]);
 
   const ramenSections = useMemo(() => {
     return RAMEN_CATEGORY_IDS.map((catId) => {
@@ -243,6 +306,7 @@ function MenuContent() {
                           <MenuItemRow
                             key={item.id}
                             item={item}
+                            soldOut={soldOutSet.has(item.id)}
                             onAdd={() => setSelectedItem(item)}
                           />
                         ))}
@@ -268,6 +332,7 @@ function MenuContent() {
                       <MenuItemRow
                         key={item.id}
                         item={item}
+                        soldOut={soldOutSet.has(item.id)}
                         onAdd={() => setSelectedItem(item)}
                       />
                     ))}
@@ -286,6 +351,7 @@ function MenuContent() {
                       <MenuItemRow
                         key={item.id}
                         item={item}
+                        soldOut={soldOutSet.has(item.id)}
                         onAdd={() => setSelectedItem(item)}
                       />
                     ))}

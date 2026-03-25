@@ -184,32 +184,32 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
       role="presentation"
     >
       <div
-        className="flex max-h-[min(92dvh,100dvh)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-gray-100 bg-white shadow-2xl sm:max-h-[min(92vh,880px)] sm:rounded-3xl"
+        className="flex max-h-[min(96dvh,100dvh)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-gray-100 bg-white shadow-2xl sm:max-h-[min(96vh,880px)] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mt-3 h-1 w-12 shrink-0 rounded-full bg-emerald-300 sm:hidden" />
+        <div className="mx-auto mt-1.5 h-0.5 w-10 shrink-0 rounded-full bg-emerald-300/90 sm:hidden" />
 
-        {/* Header: item info + image */}
-        <div className="shrink-0 border-b border-gray-100 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/60 px-5 pt-5 pb-5 sm:px-6 sm:pt-6 sm:pb-6">
-          <div className="flex items-start justify-between gap-4">
+        {/* Header: gọn tối đa — vùng giữa flex-1 được nhiều chiều cao hơn */}
+        <div className="shrink-0 border-b border-gray-100 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/60 px-4 pt-2.5 pb-2.5 sm:px-5 sm:pt-3 sm:pb-3">
+          <div className="flex items-start justify-between gap-2.5 sm:gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-500">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-500 sm:text-[10px] sm:tracking-[0.18em]">
                 Add to order
               </p>
-              <h2 className="mt-2 text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+              <h2 className="mt-0.5 text-base font-bold leading-tight tracking-tight text-gray-900 sm:mt-1 sm:text-lg">
                 {item.nameVi ?? item.name}
               </h2>
               {item.description && (
-                <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
+                <p className="mt-0.5 line-clamp-2 text-[12px] leading-snug text-gray-500 sm:mt-1 sm:line-clamp-none sm:text-[13px] sm:leading-snug md:text-sm md:leading-relaxed">
                   {item.description}
                 </p>
               )}
-              <p className="mt-2 text-base font-semibold text-amber-600">
+              <p className="mt-1 text-[13px] font-semibold leading-none text-amber-600 sm:text-sm sm:font-semibold md:text-base">
                 {yenLabel(unitPrice)}
-                <span className="ml-1 text-xs font-normal text-gray-400">/ item</span>
+                <span className="ml-1 text-[10px] font-normal text-gray-400 sm:text-[11px] md:text-xs">/ item</span>
               </p>
             </div>
-            <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-br from-amber-50 to-amber-100/80 shadow-inner sm:h-32 sm:w-32">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-amber-200/60 bg-gradient-to-br from-amber-50 to-amber-100/80 shadow-inner sm:h-[4.5rem] sm:w-[4.5rem] sm:rounded-xl md:rounded-2xl">
               {item.imageUrl ? (
                 <img
                   src={item.imageUrl}
@@ -226,7 +226,7 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 rounded-full p-2.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+              className="-mr-0.5 shrink-0 rounded-full p-1.5 text-xs text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 sm:p-2 sm:text-sm"
               aria-label="Close"
             >
               ✕
@@ -235,10 +235,13 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
         </div>
 
         <div
-          className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-5 pt-4 sm:px-6 sm:pt-5"
-          style={{ WebkitOverflowScrolling: "touch" }}
+          className="add-to-cart-modal-scroll min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain scroll-smooth px-4 pt-2 pb-0 sm:px-6 sm:pt-2.5 transform-gpu"
+          style={{
+            WebkitOverflowScrolling: "touch",
+            overscrollBehaviorY: "contain",
+          }}
         >
-          <div className="space-y-6 pb-3">
+          <div className="space-y-3.5 pb-2.5 sm:space-y-4 sm:pb-3">
           {/* ぎょうざ: 店内 / お持ち帰り */}
           {isGyoza && (
             <div className="overflow-hidden rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/40 shadow-[0_8px_30px_-12px_rgba(16,185,129,0.25)] ring-1 ring-emerald-100/50">
@@ -428,7 +431,7 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
 
           {/* 150g・200g 同価 — 必須（キッチン用） */}
           {requiresPortionChoice150200 && (
-            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-4">
+            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3.5 sm:p-4">
               <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                 <p className="text-xs font-semibold text-gray-800">
                   麺の量 <span className="text-red-600">必須</span>
@@ -460,7 +463,7 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
 
           {/* つけ麺 500g以上 / 多聞 500g以上 — 600〜1000g（500g基準で100gごと +¥100） */}
           {requiresPortionChoice500over && (
-            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-4">
+            <div className="rounded-2xl border border-amber-200/80 bg-amber-50/40 p-3.5 sm:p-4">
               <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                 <p className="text-xs font-semibold text-gray-800">
                   麺の量（500g以上） <span className="text-red-600">必須</span>
@@ -494,10 +497,10 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
             </div>
           )}
 
-          {/* トッピング / Extras — ngay sau Seat (味玉・メンマ・チャーシュー) */}
+          {/* トッピング / Extras */}
           {item.options && item.options.length > 0 && (
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/30 p-4">
-              <div className="mb-2 flex items-baseline justify-between gap-2">
+            <div className="rounded-2xl border border-amber-100 bg-amber-50/30 p-3.5 sm:p-4">
+              <div className="mb-1.5 flex items-baseline justify-between gap-2">
                 <p className="text-xs font-semibold text-gray-700">
                   トッピング <span className="text-[11px] text-gray-400">/ Extras</span>
                 </p>
@@ -505,7 +508,7 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
                   麺類におすすめの追加トッピングです。
                 </p>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {item.options.map((opt) => {
                   const selected = selectedExtras.some((e) => e.optionId === opt.id);
                   return (
@@ -513,16 +516,16 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
                       key={opt.id}
                       type="button"
                       onClick={() => toggleExtra(opt)}
-                      className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-sm transition ${
+                      className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3.5 py-2.5 text-sm transition ${
                         selected
                           ? "border-emerald-300 bg-white ring-1 ring-emerald-200/60"
                           : "border-amber-100 bg-white/70 hover:border-emerald-200 hover:bg-emerald-50/40"
                       }`}
                     >
-                      <span className="font-medium text-gray-800">
+                      <span className="min-w-0 flex-1 text-left font-medium leading-snug text-gray-800">
                         {formatOptionLabel(opt)}
                       </span>
-                      <span className="text-sm font-semibold text-emerald-600">
+                      <span className="shrink-0 text-sm font-semibold text-emerald-600">
                         +{yenLabel(opt.price)}
                       </span>
                     </button>
@@ -534,10 +537,10 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
 
           {/* ご要望：つけ麺系はプリセット＋自由記入、らーめん区分は自由記入のみ */}
           {isNoodleCategory && (
-            <div className="rounded-2xl border border-amber-50 bg-amber-50/30 p-4">
+            <div className="rounded-2xl border border-amber-50 bg-amber-50/30 p-3.5 sm:p-4">
               {showQuickNotePresets && (
                 <>
-                  <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                  <div className="mb-1.5 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
                     <p className="text-xs font-semibold text-gray-700">
                       ご要望プリセット
                       {requiresTsukemenNoodleTemperature ? (
@@ -546,7 +549,7 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
                         <span className="text-[11px] text-gray-400"> / Quick notes</span>
                       )}
                     </p>
-                    <p className="text-[10px] leading-relaxed text-gray-400">
+                    <p className="text-[10px] leading-snug text-gray-400">
                       {requiresTsukemenNoodleTemperature
                         ? "冷たい麺・温かい麺のいずれかをお選びください。"
                         : "お好みの麺の温度をお選びください。"}
@@ -583,14 +586,14 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
                   </div>
                 </>
               )}
-              <div className={showQuickNotePresets ? "mt-3" : ""}>
+              <div className={showQuickNotePresets ? "mt-2.5" : ""}>
                 <label
                   htmlFor={`custom-note-${item.id}`}
-                  className="mb-1.5 block text-xs font-medium text-gray-700"
+                  className="mb-1 block text-xs font-medium text-gray-700"
                 >
                   ご要望・メモ <span className="text-[11px] font-normal text-gray-400">/ Your requests</span>
                 </label>
-                <p className="mb-2 text-[11px] leading-relaxed text-gray-500">
+                <p className="mb-1.5 text-[11px] leading-snug text-gray-500">
                   トッピング・アレルギーなど、ご要望がございましたらご記入ください。空欄のままでも問題ございません。
                 </p>
                 <textarea
@@ -600,9 +603,9 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
                   rows={3}
                   maxLength={500}
                   placeholder="ご希望を自由にご記入ください。（任意）"
-                  className="w-full resize-none rounded-xl border border-amber-100 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 sm:resize-y"
+                  className="w-full resize-none rounded-xl border border-amber-100 bg-white px-3 py-2 text-sm leading-snug text-gray-800 placeholder:text-gray-400 focus:border-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 sm:resize-y"
                 />
-                <p className="mt-1 text-right text-[10px] text-gray-400">
+                <p className="mt-0.5 text-right text-[10px] text-gray-400">
                   {customRequestNote.length}/500
                 </p>
               </div>
@@ -611,37 +614,40 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
           </div>
         </div>
 
-        <div className="shrink-0 space-y-4 border-t border-gray-100 bg-white/95 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-10px_28px_-18px_rgba(15,23,42,0.14)] backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 sm:px-6 sm:pb-5">
-          {/* Summary card */}
-          <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-medium text-gray-600">Quantity</span>
-                <div className="flex items-center rounded-xl border border-emerald-200 bg-white shadow-sm">
+        <div className="shrink-0 space-y-1.5 border-t border-gray-100 bg-white/95 px-4 pt-2.5 pb-[max(0.62rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_-16px_rgba(15,23,42,0.12)] backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 sm:space-y-2 sm:px-5 sm:pt-3 sm:pb-3">
+          {/* Summary — footer thấp hơn, nhường chỗ cho vùng cuộn */}
+          <div className="rounded-lg border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-white p-2.5 shadow-sm sm:rounded-xl sm:p-3">
+            <div className="flex items-center justify-between gap-2 sm:gap-3">
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <span className="text-[11px] font-medium text-gray-600 sm:text-xs md:text-sm">
+                  <span className="sm:hidden">Qty</span>
+                  <span className="hidden sm:inline">Quantity</span>
+                </span>
+                <div className="flex items-center rounded-md border border-emerald-200 bg-white shadow-sm sm:rounded-lg md:rounded-xl">
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    className="flex h-10 w-10 items-center justify-center rounded-l-xl text-lg font-medium text-emerald-600 transition hover:bg-emerald-50/80"
+                    className="flex h-8 w-8 items-center justify-center rounded-l-md text-sm font-medium text-emerald-600 transition hover:bg-emerald-50/80 active:bg-emerald-50 sm:h-8 sm:w-8 sm:rounded-l-lg md:h-9 md:w-9 md:rounded-l-xl md:text-base"
                   >
                     −
                   </button>
-                  <span className="w-12 text-center text-base font-bold text-gray-900">
+                  <span className="w-9 text-center text-xs font-bold text-gray-900 sm:w-10 sm:text-sm md:w-11 md:text-base">
                     {quantity}
                   </span>
                   <button
                     type="button"
                     onClick={() => setQuantity((q) => q + 1)}
-                    className="flex h-10 w-10 items-center justify-center rounded-r-xl text-lg font-medium text-emerald-600 transition hover:bg-emerald-50/80"
+                    className="flex h-8 w-8 items-center justify-center rounded-r-md text-sm font-medium text-emerald-600 transition hover:bg-emerald-50/80 active:bg-emerald-50 sm:h-8 sm:w-8 sm:rounded-r-lg md:h-9 md:w-9 md:rounded-r-xl md:text-base"
                   >
                     +
                   </button>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs font-medium text-gray-500">
+                <p className="text-[10px] font-medium text-gray-500 sm:text-[11px] md:text-xs">
                   {yenLabel(unitPrice)} × {quantity}
                 </p>
-                <p className="mt-0.5 text-2xl font-bold text-emerald-600">
+                <p className="mt-px text-lg font-bold leading-none text-emerald-600 sm:text-xl md:text-2xl">
                   {yenLabel(total)}
                 </p>
               </div>
@@ -653,7 +659,7 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
             (requiresBeerVariant && beerVariant === null) ||
             (requiresHighballVariant && highballVariant === null) ||
             (requiresBeerBallVariant && beerBallVariant === null)) && (
-            <div className="space-y-1 text-center text-[12px] font-medium leading-relaxed text-amber-800">
+            <div className="space-y-0.5 text-center text-[11px] font-medium leading-snug text-amber-800 sm:text-[12px] sm:leading-relaxed">
               {requiresPortionChoice150200 && noodlePortionGrams === null && (
                 <p>上の「150g」または「200g」をお選びください。</p>
               )}
@@ -679,13 +685,13 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
             type="button"
             onClick={handleAdd}
             disabled={!canAddToCart}
-            className={`flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 py-4 text-base font-semibold shadow-sm transition ${
+            className={`flex w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-200 py-2.5 text-sm font-semibold shadow-sm transition active:scale-[0.99] sm:gap-2 sm:rounded-xl sm:py-3 md:rounded-2xl md:text-base ${
               canAddToCart
                 ? "bg-gradient-to-r from-emerald-50/90 to-teal-50/40 text-emerald-700 hover:from-emerald-50 hover:to-emerald-100/60"
                 : "cursor-not-allowed bg-gray-100 text-gray-400 opacity-70"
             }`}
           >
-            <ShoppingCart className={`h-5 w-5 ${canAddToCart ? "text-emerald-600" : ""}`} />
+            <ShoppingCart className={`h-4 w-4 sm:h-[1.125rem] sm:w-[1.125rem] md:h-5 md:w-5 ${canAddToCart ? "text-emerald-600" : ""}`} />
             Add to Cart
           </button>
         </div>

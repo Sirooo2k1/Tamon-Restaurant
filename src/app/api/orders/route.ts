@@ -13,6 +13,7 @@ import {
   orderStatusAfterMergeAppend,
   tableLabelsMatch,
 } from "@/lib/order-merge";
+import { findSoldOutInPayload, soldOutLabelJa } from "@/lib/menu-availability-server";
 import { getSupabaseForOrdersOrNull } from "@/lib/supabase-api";
 import {
   TRACKED_ORDER_COOKIE,
@@ -55,6 +56,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "items または total_amount が必要です" },
       { status: 400 }
+    );
+  }
+
+  const soldOutIds = await findSoldOutInPayload(items);
+  if (soldOutIds.length) {
+    return NextResponse.json(
+      {
+        error: `ただいまご注文いただけないメニューが含まれています: ${soldOutLabelJa(soldOutIds)}`,
+      },
+      { status: 409 }
     );
   }
 

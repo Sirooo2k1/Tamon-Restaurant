@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutDashboard, QrCode, ReceiptText } from "lucide-react";
+import { Ban, LayoutDashboard, QrCode, ReceiptText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type KitchenNavActive = "overview" | "orders" | "qr";
+export type KitchenNavActive = "overview" | "orders" | "qr" | "stock";
 
 type KitchenNavProps = {
   active: KitchenNavActive;
@@ -19,6 +19,7 @@ function useKitchenHrefs(dateParam?: string) {
     overview: `/kitchen${q}`,
     orders: `/kitchen/orders${q}`,
     qr: "/kitchen/qr-codes",
+    stock: "/kitchen/menu-availability",
   };
 }
 
@@ -91,6 +92,18 @@ export function KitchenDesktopAside({
             <span>QR Codes</span>
           </Link>
         )}
+
+        {active === "stock" ? (
+          <div className={activeCls}>
+            <Ban className="h-3.5 w-3.5" aria-hidden />
+            <span>Sold out</span>
+          </div>
+        ) : (
+          <Link href={hrefs.stock} className={inactive}>
+            <Ban className="h-3.5 w-3.5" aria-hidden />
+            <span>Sold out</span>
+          </Link>
+        )}
       </nav>
     </aside>
   );
@@ -106,7 +119,7 @@ export function KitchenMobileNav({
 
   const tabBtn = (isActive: boolean) =>
     cn(
-      "relative flex min-h-[44px] flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-xl px-1.5 py-2 text-center text-[10px] font-semibold leading-tight transition sm:text-[11px]",
+      "relative flex min-h-[44px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-2 text-center text-[9px] font-semibold leading-tight transition sm:px-1.5 sm:text-[11px]",
       isActive
         ? "border border-amber-300/80 bg-white text-gray-900 shadow-sm ring-1 ring-amber-100"
         : "border border-transparent text-gray-600 hover:bg-white/70 hover:text-gray-900"
@@ -120,7 +133,7 @@ export function KitchenMobileNav({
       )}
     >
       <nav
-        className="mx-auto grid max-w-2xl grid-cols-3 gap-1.5"
+        className="mx-auto grid max-w-3xl grid-cols-4 gap-1 sm:gap-1.5"
         aria-label="キッチン画面の切り替え"
       >
         {active === "overview" ? (
@@ -170,6 +183,18 @@ export function KitchenMobileNav({
           <Link href={hrefs.qr} className={tabBtn(false)} prefetch={false}>
             <QrCode className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
             <span>QR</span>
+          </Link>
+        )}
+
+        {active === "stock" ? (
+          <span className={tabBtn(true)}>
+            <Ban className="h-4 w-4 shrink-0 text-amber-800" aria-hidden />
+            <span className="leading-tight">Sold out</span>
+          </span>
+        ) : (
+          <Link href={hrefs.stock} className={tabBtn(false)} prefetch={false}>
+            <Ban className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+            <span className="leading-tight">Sold out</span>
           </Link>
         )}
       </nav>

@@ -41,6 +41,23 @@ export interface Database {
           updated_at?: string;
         };
       };
+      menu_group_sold_out: {
+        Row: {
+          group_id: string;
+          sold_out: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          group_id: string;
+          sold_out?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          group_id?: string;
+          sold_out?: boolean;
+          updated_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

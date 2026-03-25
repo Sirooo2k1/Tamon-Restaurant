@@ -46,6 +46,24 @@ body {
   scrollbar-width: none;
 }
 
+/* Add to cart modal: mượt cuộn + thanh mảnh để khung nội dung rộng hơn về nhận thức */
+.add-to-cart-modal-scroll {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(16 185 129 / 0.32) transparent;
+}
+.add-to-cart-modal-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.add-to-cart-modal-scroll::-webkit-scrollbar-thumb {
+  background-color: rgb(16 185 129 / 0.32);
+  border-radius: 9999px;
+}
+.add-to-cart-modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 @layer components {
   .app-shell {
     min-height: 100vh;
