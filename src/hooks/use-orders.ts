@@ -4,7 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import type { OrderRecord } from "@/lib/types";
 
 async function fetchOrders(): Promise<OrderRecord[]> {
-  const res = await fetch("/api/orders");
+  const res = await fetch("/api/orders", {
+    credentials: "include",
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
@@ -14,7 +18,9 @@ export function useOrders() {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(() => {
-    fetchOrders().then(setOrders).finally(() => setLoading(false));
+    fetchOrders()
+      .then(setOrders)
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -28,3 +34,4 @@ export function useOrders() {
 
   return { orders, loading, refresh };
 }
+

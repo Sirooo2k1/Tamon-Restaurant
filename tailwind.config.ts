@@ -17,8 +17,13 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         display: ["var(--font-display)", "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        xs: ["0.8rem", "1.6"],
+        sm: ["0.95rem", "1.7"],
+        base: ["1.05rem", "1.8"],
       },
     },
   },

@@ -1,21 +1,20 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* outer background giống QRMenu (xanh đậm) */
-  --ramen-bg: #0b1726;
-  /* card be / trắng sữa */
-  --ramen-surface: #fef7ec;
-  --ramen-surface-strong: #fbe4c8;
-  /* accent cam */
-  --ramen-primary: #f0a32a;
-  --ramen-primary-strong: #d98612;
-  /* chữ nâu */
-  --ramen-brown: #3c2113;
-  --ramen-muted: #9d7a54;
+  /* Blog-style palette: nền be nhạt */
+  --page-bg: #faf8f0;
+  --ramen-surface: #faf8f0;
+  --ramen-surface-strong: #f5f5f4;
+  /* accent emerald + amber (blog) — tông nhẹ hơn */
+  --ramen-primary: #10b981;
+  --ramen-primary-strong: #059669;
+  --ramen-amber: #d97706;
+  --ramen-amber-bg: #fef3c7;
+  /* chữ gray (blog) */
+  --ramen-brown: #1f2937;
+  --ramen-muted: #4b5563;
 }
 
 *,
@@ -31,17 +30,12 @@ body {
 
 body {
   @apply antialiased;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-    "Inter", sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--ramen-brown);
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.14), transparent 55%),
-    radial-gradient(
-      circle at bottom,
-      rgba(15, 23, 42, 0.65),
-      transparent 60%
-    ),
-    var(--ramen-bg);
+  background: var(--page-bg);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -64,10 +58,10 @@ body {
   }
 
   .glass-panel {
-    border: 1px solid #f1e4d6;
+    border: 1px solid #e5e7eb;
     background-color: var(--ramen-surface);
     backdrop-filter: blur(6px);
-    box-shadow: 0 14px 40px rgba(163, 113, 59, 0.2);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.06);
     border-radius: 1.25rem;
   }
 
@@ -84,15 +78,15 @@ body {
     border-radius: 1.25rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #111827;
-    background-color: var(--ramen-primary);
-    box-shadow: 0 10px 30px rgba(226, 122, 50, 0.4);
-    transition: background-color 150ms ease, transform 80ms ease,
-      box-shadow 150ms ease;
+    color: #059669;
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 80ms ease;
   }
 
   .primary-btn:hover {
-    background-color: var(--ramen-primary-strong);
+    background-color: #d1fae5;
+    border-color: #6ee7b7;
   }
 
   .primary-btn:active {
@@ -109,14 +103,14 @@ body {
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--ramen-brown);
-    background-color: var(--ramen-surface-strong);
-    border: 1px solid #e2d2bf;
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
     transition: border-color 150ms ease, background-color 150ms ease;
   }
 
   .secondary-btn:hover {
-    border-color: var(--ramen-primary);
-    background-color: #ffffff;
+    border-color: #fcd34d;
+    background-color: #fef3c7;
   }
 }
 
@@ -194,16 +188,57 @@ body {
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
   }
-  .theme {
-    --font-sans: var(--font-sans);
+}
+
+/* ─── Customer payment receipt (print-only frame, 80mm-oriented) ─── */
+.customer-print-root {
+  position: fixed;
+  left: -99999px;
+  top: 0;
+  width: 80mm;
+  max-width: 80mm;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  overflow: hidden;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 4mm;
   }
-  * {
-    @apply border-border outline-ring/50;
-  }
+
   body {
-    @apply bg-background text-foreground;
+    background: #fff !important;
   }
-  html {
-    @apply font-sans;
+
+  /* Hide entire app; show only receipt */
+  body * {
+    visibility: hidden;
+  }
+
+  .customer-print-root,
+  .customer-print-root * {
+    visibility: visible;
+  }
+
+  .customer-print-root {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 72mm !important;
+    margin: 0 auto !important;
+    z-index: auto !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .customer-print-receipt {
+    font-size: 12px;
+    line-height: 1.35;
   }
 }

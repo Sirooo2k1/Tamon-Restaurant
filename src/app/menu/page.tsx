@@ -1,163 +1,339 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { menuItems, categories } from "@/lib/menu-data";
+import type { MenuItem } from "@/lib/types";
 import { AddToCartModal } from "@/components/AddToCartModal";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
-import type { MenuItem } from "@/lib/types";
-import Link from "next/link";
+import { tableDisplayLabelFromQrCode } from "@/lib/table-display-label";
+
+const TABS = [
+  { id: "ramen" as const, label: "つけ麺・ラーメン" },
+  { id: "gyoza_drink" as const, label: "ぎょうざ・ドリンク" },
+];
+
+const RAMEN_CATEGORY_IDS = [
+  "tsukemen",
+  "tamon_tsukemen",
+  "extra",
+  "ramen",
+  "kaedama",
+  "topping",
+  "rice",
+];
+
+// 1 yen ≈ 200 VND (menu-data), hiển thị giá yen như ảnh menu
+const toYen = (vnd: number) => Math.round(vnd / 200);
+
+function MenuItemRow({
+  item,
+  onAdd,
+}: {
+  item: MenuItem;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="flex gap-4 border-b border-gray-100/80 py-4 last:border-b-0">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-semibold text-gray-800">{item.name}</h3>
+            {item.highlight === "popular" && (
+              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                人気No.1
+              </span>
+            )}
+            {item.highlight === "recommended" && (
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                店長おすすめ
+              </span>
+            )}
+          </div>
+          <span className="shrink-0 font-semibold text-amber-600 sm:text-base">
+            ¥{toYen(item.price)}
+          </span>
+        </div>
+        {item.description && (
+          <p className="mt-1 text-xs text-gray-600 sm:text-sm">
+            {item.description}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={onAdd}
+          className="mt-3 flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+        >
+          <span className="text-base leading-none">+</span>
+          Add to Cart
+        </button>
+      </div>
+      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-amber-200/80 bg-amber-100 sm:h-24 sm:w-24">
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-xs text-amber-600/60">
+            写真
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function MenuContent() {
+  const [activeTab, setActiveTab] = useState<"ramen" | "gyoza_drink">("ramen");
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
   const searchParams = useSearchParams();
   const setTableLabel = useCartStore((s) => s.setTableLabel);
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>("ramen");
+  const tableLabel = useCartStore((s) => s.tableLabel);
 
   useEffect(() => {
     const table = searchParams.get("table");
-    if (table) setTableLabel(table);
+    setTableLabel(table ? tableDisplayLabelFromQrCode(table) : null);
   }, [searchParams, setTableLabel]);
 
-  const byCategory = categories.map((cat) => ({
-    ...cat,
-    items: menuItems.filter((m) => m.category === cat.id),
-  }));
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const ramenSections = useMemo(() => {
+    return RAMEN_CATEGORY_IDS.map((catId) => {
+      const cat = categories.find((c) => c.id === catId);
+      return {
+        id: catId,
+        label: cat?.label ?? catId,
+        items: menuItems.filter((i) => i.category === catId),
+      };
+    });
+  }, []);
+
+  const gyozaSection = useMemo(() => {
+    const cat = categories.find((c) => c.id === "gyoza");
+    return {
+      id: "gyoza" as const,
+      label: cat?.label ?? "ぎょうざ",
+      items: menuItems.filter((i) => i.category === "gyoza"),
+    };
+  }, []);
+
+  const drinkSection = useMemo(() => {
+    const cat = categories.find((c) => c.id === "drink");
+    return {
+      id: "drink" as const,
+      label: cat?.label ?? "ドリンク",
+      items: menuItems.filter((i) => i.category === "drink"),
+    };
+  }, []);
 
   return (
-    <main className="app-shell pb-40">
-      <header className="sticky top-0 z-30 border-b border-[#f1e4d6] bg-[rgba(255,247,236,0.96)] backdrop-blur">
-        <div className="app-container flex items-center justify-between py-3">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[var(--ramen-primary)] text-lg font-semibold text-white shadow-[0_10px_24px_rgba(226,122,50,0.5)]"
-            >
-              🍜
-            </Link>
-            <div className="text-xs">
-              <p className="font-semibold text-[color:var(--ramen-brown)]">
-                Ramen Menu
-              </p>
-              <p className="text-[11px] text-[color:var(--ramen-muted)]">
-                Quét QR trên bàn để gọi món
-              </p>
-            </div>
-          </div>
-          <div className="hidden text-right text-[11px] text-[color:var(--ramen-muted)] sm:block">
-            <p className="font-medium text-[color:var(--ramen-primary-strong)]">
-              Trải nghiệm mobile-first
+    <main
+      className="min-h-screen pb-32"
+      style={{
+        background:
+          "linear-gradient(180deg, #fef8f3 0%, #fef3e8 50%, #fef8f3 100%)",
+      }}
+    >
+      {/* Toast thêm vào giỏ hàng */}
+      {toast && (
+        <div className="pointer-events-none fixed top-4 left-1/2 z-50 w-full max-w-sm -translate-x-1/2 px-4 sm:top-6">
+          <div className="pointer-events-auto flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm shadow-lg shadow-emerald-100">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400 text-white">
+              <CheckCircle2 className="h-4 w-4" />
+            </span>
+            <p className="flex-1 text-[13px] font-medium text-gray-800">
+              {toast.message}
             </p>
-            <p>Thiết kế cho mọi thiết bị</p>
           </div>
         </div>
-        <div className="app-container pb-3">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {categories.map((cat) => (
+      )}
+
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
+        <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/95 shadow-lg sm:rounded-[2rem]">
+          {/* Header */}
+          <header
+          className="rounded-t-2xl px-4 py-5 sm:rounded-t-[1.25rem] sm:px-6 sm:py-6"
+          style={{
+            background: "linear-gradient(90deg, #ecfdf5 0%, #fffbeb 100%)",
+          }}
+        >
+          <p className="text-sm font-semibold uppercase tracking-wider text-emerald-700">
+            Menu
+          </p>
+          <h1 className="mt-1 text-xl font-bold text-gray-800 sm:text-2xl">
+            自家製麺 多聞
+          </h1>
+          <p className="mt-1 text-xs text-gray-600 sm:text-sm">
+            つけ麺・らーめん、餃子お持ち帰り
+          </p>
+          {tableLabel && (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-3 py-2 text-sm font-semibold text-emerald-900 shadow-sm">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+                ご利用席
+              </span>
+              <span className="font-mono text-emerald-900">{tableLabel}</span>
+            </p>
+          )}
+          </header>
+
+          {/* Tabs – pill bo tròn */}
+          <div className="flex gap-2 rounded-b-2xl bg-white/80 px-3 pt-2 pb-2 sm:rounded-b-[1.25rem]">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            return (
               <button
-                key={cat.id}
+                key={tab.id}
                 type="button"
-                onClick={() => setActiveCategory(cat.id)}
-                className={`pill shrink-0 ${
-                  activeCategory === cat.id
-                    ? "bg-[var(--ramen-primary)] text-stone-950 shadow-sm shadow-[rgba(226,122,50,0.4)]"
-                    : "bg-[var(--ramen-surface-strong)] text-[color:var(--ramen-muted)] border border-[#e2d2bf] hover:border-[var(--ramen-primary)]/70"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 rounded-2xl px-4 py-2.5 text-center text-sm font-medium transition sm:py-3 sm:text-base ${
+                  active
+                    ? "bg-emerald-50 text-gray-800 shadow-[inset_0_-2px_0_rgba(16,185,129,0.28)]"
+                    : "text-gray-600 hover:bg-amber-50 hover:text-amber-900"
                 }`}
               >
-                {cat.label}
+                {tab.label}
               </button>
-            ))}
+            );
+          })}
+          </div>
+
+          {/* Content – nền màu nhẹ */}
+          <div className="rounded-t-2xl rounded-b-2xl bg-amber-50/60 px-4 py-4 sm:rounded-t-[1.25rem] sm:rounded-b-[1.25rem] sm:px-6 sm:py-5">
+          {activeTab === "ramen" && (
+            <div className="space-y-6">
+              {ramenSections.map((section) => {
+                if (section.items.length === 0) return null;
+                const isExtraSoup = section.id === "extra";
+                return (
+                  <div key={section.id}>
+                    {isExtraSoup && (
+                      <div className="mt-0 mb-10 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm">
+                        <p className="text-xs font-semibold text-emerald-800 sm:text-sm">
+                          ★ つけ麺と多聞つけ麺 違いは麺のみです
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-gray-600">
+                          つけ麺はつるつる、なめらかなのどごし。多聞はもっちり、噛みごたえのある風味豊かな全粒粉麺です。
+                        </p>
+                      </div>
+                    )}
+                    <section>
+                      <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-2xl border border-emerald-200 border-l-4 border-r-4 border-l-emerald-200 border-r-emerald-200 bg-emerald-50/80 py-2 pl-3 pr-4 sm:mb-4">
+                        <h2 className="text-base font-bold tracking-tight text-emerald-900 sm:text-lg">
+                          {section.label}
+                        </h2>
+                      </div>
+                      {section.id === "topping" && (
+                        <p className="mb-2 text-xs text-gray-600">
+                          ラーメンをご注文の際にトッピングをどうぞ！単品での注文は出来ません。
+                        </p>
+                      )}
+                      <div className="space-y-0">
+                        {section.items.map((item) => (
+                          <MenuItemRow
+                            key={item.id}
+                            item={item}
+                            onAdd={() => setSelectedItem(item)}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {activeTab === "gyoza_drink" && (
+            <div className="space-y-6">
+              {gyozaSection.items.length > 0 && (
+                <section>
+                  <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-2xl border border-emerald-200 border-l-4 border-r-4 border-l-emerald-200 border-r-emerald-200 bg-emerald-50/80 py-2 pl-3 pr-4 sm:mb-4">
+                    <h2 className="text-base font-bold tracking-tight text-emerald-900 sm:text-lg">
+                      {gyozaSection.label}
+                    </h2>
+                  </div>
+                  <div className="space-y-0">
+                    {gyozaSection.items.map((item) => (
+                      <MenuItemRow
+                        key={item.id}
+                        item={item}
+                        onAdd={() => setSelectedItem(item)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+              {drinkSection.items.length > 0 && (
+                <section>
+                  <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-2xl border border-emerald-200 border-l-4 border-r-4 border-l-emerald-200 border-r-emerald-200 bg-emerald-50/80 py-2 pl-3 pr-4 sm:mb-4">
+                    <h2 className="text-base font-bold tracking-tight text-emerald-900 sm:text-lg">
+                      {drinkSection.label}
+                    </h2>
+                  </div>
+                  <div className="space-y-0">
+                    {drinkSection.items.map((item) => (
+                      <MenuItemRow
+                        key={item.id}
+                        item={item}
+                        onAdd={() => setSelectedItem(item)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
           </div>
         </div>
-      </header>
-
-      <div className="app-container py-5 space-y-6">
-        <section className="rounded-2xl bg-[var(--ramen-surface)] p-4 shadow-[0_10px_30px_rgba(163,113,59,0.15)]">
-          <p className="text-xs font-semibold text-[color:var(--ramen-primary-strong)]">
-            Chọn món theo sở thích
-          </p>
-          <p className="mt-1 text-[11px] text-stone-400">
-            Chạm vào món để tùy chỉnh độ cay, độ dai mì và thêm topping. Giao diện
-            được tối ưu cho màn hình điện thoại.
-          </p>
-        </section>
-
-        {byCategory.map(
-          (section) =>
-            section.items.length > 0 && (
-              <section
-                key={section.id}
-                id={section.id}
-                className={activeCategory !== section.id ? "hidden" : ""}
-              >
-                <div className="mb-3 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-[color:var(--ramen-brown)]">
-                    {section.label}
-                  </h2>
-                  <span className="text-xs text-stone-500">
-                    {section.items.length} món
-                  </span>
-                </div>
-                <ul className="space-y-3">
-                  {section.items.map((item) => (
-                    <li key={item.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedItem(item)}
-                        className="group flex w-full items-stretch gap-3 rounded-2xl bg-white p-3 text-left shadow-[0_8px_24px_rgba(15,23,42,0.12)] ring-1 ring-[#f4e5d7] transition hover:-translate-y-[1px] hover:shadow-[0_10px_30px_rgba(15,23,42,0.22)] hover:ring-[var(--ramen-primary)]/80"
-                      >
-                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-[#fde9d4] to-[#f8d5af]">
-                          <div className="absolute inset-0 opacity-40 group-hover:opacity-60">
-                            <div className="h-full w-full bg-[radial-gradient(circle_at_30%_20%,rgba(248,250,252,0.12),transparent),radial-gradient(circle_at_80%_80%,rgba(234,88,12,0.3),transparent)]" />
-                          </div>
-                          <div className="relative flex h-full w-full items-center justify-center text-[10px] text-[color:var(--ramen-muted)]">
-                            ảnh món
-                          </div>
-                        </div>
-                        <div className="flex flex-1 flex-col justify-between gap-1">
-                          <div>
-                            <p className="text-sm font-semibold text-[color:var(--ramen-brown)]">
-                              {item.nameVi ?? item.name}
-                            </p>
-                            {item.description && (
-                              <p className="mt-0.5 line-clamp-2 text-[11px] text-[color:var(--ramen-muted)]">
-                                {item.description}
-                              </p>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="rounded-full bg-[var(--ramen-surface-strong)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[color:var(--ramen-muted)]">
-                              Chạm để chọn &amp; tùy chỉnh
-                            </span>
-                            <span className="text-sm font-semibold text-[color:var(--ramen-primary-strong)]">
-                              {item.price.toLocaleString("vi-VN")}₫
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )
-        )}
       </div>
+
+      {/* Footer giỏ hàng cố định – luôn hiển thị trên màn hình */}
+      <CartDrawer />
 
       {selectedItem && (
         <AddToCartModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
+          onAdded={(name) =>
+            setToast({
+              id: Date.now(),
+              message: `${name} をカートに追加しました`,
+            })
+          }
         />
       )}
-      <CartDrawer />
     </main>
   );
 }
 
 export default function MenuPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-stone-950 flex items-center justify-center text-stone-500">Đang tải menu...</div>}>
+    <Suspense
+      fallback={
+        <main
+          className="min-h-screen pb-32"
+          style={{
+            background:
+              "linear-gradient(180deg, #fef8f3 0%, #fef3e8 50%, #fef8f3 100%)",
+          }}
+        >
+          <div className="flex min-h-[60vh] items-center justify-center">
+            <p className="text-gray-500">メニューを読み込み中...</p>
+          </div>
+        </main>
+      }
+    >
       <MenuContent />
     </Suspense>
   );

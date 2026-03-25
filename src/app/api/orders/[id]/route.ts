@@ -1,34 +1,155 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase";
-import { updateDevOrder } from "@/lib/dev-orders";
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const body = (await request.json()) as { status?: string; payment_status?: string };
+import { assertKitchenStaff } from "@/lib/kitchen-session";
+import { sanitizeOrderRow } from "@/lib/order-public";
+import { getSupabaseForOrdersOrNull } from "@/lib/supabase-api";
+import type { OrderItemPayload } from "@/lib/types";
+import {
+  markAllOrderLinesDelivered,
+  markNoodleOrderLinesDeliveredOnly,
+  shouldAutoMarkAllLinesDelivered,
+} from "@/lib/order-auto-fulfillment";
+import { getDevOrderById, updateDevOrder } from "@/lib/dev-orders";
+import {
+  TRACKED_ORDER_COOKIE,
+  TRACKED_ORDER_SECRET_COOKIE,
+  setGuestOrderCookies,
+} from "@/lib/tracked-order-session";
 
-  const db = (() => {
-    try {
-      return getSupabase();
-    } catch {
-      return null;
-    }
-  })();
+const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
+
+function verifyGuestCookies(request: NextRequest, orderId: string, rowToken: string): boolean {
+  const oid = request.cookies.get(TRACKED_ORDER_COOKIE)?.value;
+  const sec = request.cookies.get(TRACKED_ORDER_SECRET_COOKIE)?.value;
+  return oid === orderId && Boolean(sec) && sec === rowToken;
+}
+
+/** Public read — chỉ khi cookie HttpOnly khớp hoặc ?k= (một lần) đặt cookie */
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  if (!id?.trim()) {
+    return NextResponse.json({ error: "id が必要です" }, { status: 400 });
+  }
+
+  const key = request.nextUrl.searchParams.get("k");
+  const db = getSupabaseForOrdersOrNull();
+
+  let row: Record<string, unknown> | null = null;
 
   if (db) {
-    const update: { status?: string; payment_status?: string } = {};
+    const { data, error } = await db.from("orders").select("*").eq("id", id).maybeSingle();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data) return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
+    row = data as Record<string, unknown>;
+  } else {
+    const record = getDevOrderById(id);
+    if (!record) return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
+    row = record as unknown as Record<string, unknown>;
+  }
+
+  const token = row.guest_view_token;
+  const tokenStr = typeof token === "string" && token.length > 0 ? token : null;
+
+  if (!tokenStr) {
+    if (process.env.NODE_ENV !== "production") {
+      const oidOnly = request.cookies.get(TRACKED_ORDER_COOKIE)?.value;
+      if (oidOnly !== id) {
+        return NextResponse.json(
+          { error: "アクセスできません（開発: guest_view_token なしの場合は track cookie のみ）" },
+          { status: 403 }
+        );
+      }
+    } else {
+      return NextResponse.json(
+        {
+          error:
+            "データベースに guest_view_token がありません。Supabase でマイグレーションを実行してください。",
+        },
+        { status: 503 }
+      );
+    }
+  } else {
+    if (key === tokenStr) {
+      const clean = request.nextUrl.clone();
+      clean.searchParams.delete("k");
+      const res = NextResponse.redirect(clean);
+      setGuestOrderCookies(res, id, tokenStr);
+      return res;
+    }
+    if (!verifyGuestCookies(request, id, tokenStr)) {
+      return NextResponse.json(
+        {
+          error:
+            "本日はご来店ありがとうございました。ご注文の確認は、ご注文時の端末またはお席のQRのリンクからご覧いただけます。",
+          code: "guest_access_required",
+        },
+        { status: 403 }
+      );
+    }
+  }
+
+  return NextResponse.json(sanitizeOrderRow(row), { headers: NO_STORE });
+}
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const denied = assertKitchenStaff(request);
+  if (denied) return denied;
+
+  const { id } = await params;
+  const body = (await request.json()) as {
+    status?: string;
+    payment_status?: string;
+    items?: OrderItemPayload[];
+  };
+
+  const db = getSupabaseForOrdersOrNull();
+
+  if (db) {
+    const { data: row, error: fetchErr } = await db.from("orders").select("*").eq("id", id).maybeSingle();
+    if (fetchErr) return NextResponse.json({ error: fetchErr.message }, { status: 500 });
+    if (!row) return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
+
+    const rec = row as Record<string, unknown>;
+    const currentItems: OrderItemPayload[] = Array.isArray(rec.items)
+      ? (rec.items as OrderItemPayload[])
+      : [];
+
+    let nextItems: OrderItemPayload[] | undefined;
+    if (body.status != null && shouldAutoMarkAllLinesDelivered(body.status)) {
+      const base = body.items ?? currentItems;
+      if (body.items != null && !Array.isArray(body.items)) {
+        return NextResponse.json({ error: "items は配列である必要があります" }, { status: 400 });
+      }
+      const arr = Array.isArray(base) ? base : [];
+      nextItems =
+        body.status === "paid"
+          ? markAllOrderLinesDelivered(arr)
+          : markNoodleOrderLinesDeliveredOnly(arr);
+    } else if (body.items != null) {
+      if (!Array.isArray(body.items)) {
+        return NextResponse.json({ error: "items は配列である必要があります" }, { status: 400 });
+      }
+      nextItems = body.items;
+    }
+
+    const update: { status?: string; payment_status?: string; items?: unknown } = {};
     if (body.status != null) update.status = body.status;
     if (body.payment_status != null) update.payment_status = body.payment_status;
+    if (nextItems !== undefined) update.items = nextItems;
+
     if (Object.keys(update).length === 0) {
-      return NextResponse.json({ error: "Cần status hoặc payment_status" }, { status: 400 });
+      return NextResponse.json(
+        { error: "status / payment_status / items のいずれかが必要です" },
+        { status: 400 }
+      );
     }
     const { data, error } = await db.from("orders").update(update).eq("id", id).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    return NextResponse.json(sanitizeOrderRow(data as Record<string, unknown>), { headers: NO_STORE });
   }
 
   const updated = updateDevOrder(id, body);
-  if (!updated) return NextResponse.json({ error: "Không tìm thấy đơn" }, { status: 404 });
-  return NextResponse.json(updated);
+  if (!updated) return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
+  return NextResponse.json(sanitizeOrderRow(updated as unknown as Record<string, unknown>), {
+    headers: NO_STORE,
+  });
 }

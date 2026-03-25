@@ -1,13 +1,23 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Geist } from "next/font/google";
+import { DM_Sans, Playfair_Display } from "next/font/google";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-display",
+});
 
 export const metadata: Metadata = {
-  title: "Ramen Menu | Gọi món & Thanh toán",
-  description: "Menu điện tử nhà hàng ramen - Quét QR, chọn món, thanh toán ngay",
+  title: "多聞 Menu | Order & Pay Automatically",
+  description:
+    "Digital ramen menu — scan the QR code at your table, order dishes, and pay when you're done.",
 };
 
 export default function RootLayout({
@@ -16,7 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={cn("font-sans", geist.variable)}>
+    <html
+      lang="vi"
+      className={cn("font-sans", dmSans.variable, playfair.variable)}
+    >
       <body className="min-h-screen font-sans antialiased">
         {children}
       </body>
