@@ -1,29 +1,33 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase";
 
+let loggedAnonFallback = false;
+
 /**
  * Client Supabase cho Route Handlers (server-only).
- * Production: bắt buộc **Service Role** (bypass RLS an toàn khi RLS chặn anon).
- * Dev: có service key → service; không → anon; nếu không cấu hình URL → null (chỉ dev-orders memory).
+ * Ưu tiên **Service Role** (RLS bypass, ghi đơn an toàn). Không có → dùng **anon** (đủ cho policy mở như `menu_group_sold_out`).
+ *
+ * Lưu ý: Nếu production chỉ có anon, cần RLS/policy cho phép thao tác server cần thiết; menu 売り切れ đọc được với policy allow-all.
  */
 export function getSupabaseForOrdersOrNull(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!url?.trim()) {
     return null;
   }
 
   if (serviceKey) {
-    return createClient(url, serviceKey, {
+    return createClient(url.trim(), serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
   }
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "Production yêu cầu SUPABASE_SERVICE_ROLE_KEY (env server, không NEXT_PUBLIC_*). " +
-        "Xem docs/supabase-production-security.md"
+  if (process.env.NODE_ENV === "production" && !loggedAnonFallback) {
+    loggedAnonFallback = true;
+    console.warn(
+      "[supabase-api] SUPABASE_SERVICE_ROLE_KEY not set — using anon for server routes. " +
+        "Menu/orders need NEXT_PUBLIC_SUPABASE_ANON_KEY; add service role for stricter server writes."
     );
   }
 

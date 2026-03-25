@@ -142,8 +142,16 @@ function MenuContent() {
         const res = await fetch(`/api/menu/availability?t=${Date.now()}`, {
           cache: "no-store",
         });
-        if (!res.ok || cancelled) return;
-        const j = (await res.json()) as { soldOutIds?: string[] };
+        if (!res.ok || cancelled) {
+          if (!res.ok && process.env.NODE_ENV === "development") {
+            console.warn("[menu] /api/menu/availability HTTP", res.status, await res.text().catch(() => ""));
+          }
+          return;
+        }
+        const j = (await res.json()) as { soldOutIds?: string[]; _debugError?: string };
+        if (j._debugError && process.env.NODE_ENV === "development") {
+          console.warn("[menu] sold-out API:", j._debugError);
+        }
         if (!cancelled) setSoldOutIds(Array.isArray(j.soldOutIds) ? j.soldOutIds : []);
       } catch {
         /* keep previous */

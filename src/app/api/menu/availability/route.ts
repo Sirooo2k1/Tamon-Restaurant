@@ -12,7 +12,15 @@ export async function GET() {
   try {
     const soldOutIds = await getSoldOutMenuItemIds();
     return NextResponse.json({ soldOutIds }, { headers: noStore });
-  } catch {
-    return NextResponse.json({ soldOutIds: [] as string[] }, { headers: noStore });
+  } catch (e) {
+    console.error("[api/menu/availability] GET failed:", e);
+    const message = e instanceof Error ? e.message : String(e);
+    return NextResponse.json(
+      {
+        soldOutIds: [] as string[],
+        ...(process.env.NODE_ENV === "development" ? { _debugError: message } : {}),
+      },
+      { headers: noStore },
+    );
   }
 }
