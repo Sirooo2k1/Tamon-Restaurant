@@ -82,6 +82,14 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
     setGyozaServiceMode("dine_in");
   }, [item.id]);
 
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   const isNoodleCategory =
     item.category === "ramen" ||
     item.category === "tsukemen" ||
@@ -171,17 +179,18 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[110] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4"
       onClick={onClose}
+      role="presentation"
     >
       <div
-        className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl border border-gray-100 bg-white shadow-2xl sm:rounded-3xl"
+        className="flex max-h-[min(92dvh,100dvh)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-gray-100 bg-white shadow-2xl sm:max-h-[min(92vh,880px)] sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mt-3 h-1 w-12 rounded-full bg-emerald-300 sm:hidden" />
+        <div className="mx-auto mt-3 h-1 w-12 shrink-0 rounded-full bg-emerald-300 sm:hidden" />
 
         {/* Header: item info + image */}
-        <div className="border-b border-gray-100 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/60 px-5 pt-5 pb-5 sm:px-6 sm:pt-6 sm:pb-6">
+        <div className="shrink-0 border-b border-gray-100 bg-gradient-to-br from-emerald-50/80 via-white to-amber-50/60 px-5 pt-5 pb-5 sm:px-6 sm:pt-6 sm:pb-6">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-500">
@@ -225,7 +234,11 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
           </div>
         </div>
 
-        <div className="space-y-6 p-5 sm:p-6">
+        <div
+          className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-5 pt-4 sm:px-6 sm:pt-5"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <div className="space-y-6 pb-3">
           {/* ぎょうざ: 店内 / お持ち帰り */}
           {isGyoza && (
             <div className="overflow-hidden rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/40 shadow-[0_8px_30px_-12px_rgba(16,185,129,0.25)] ring-1 ring-emerald-100/50">
@@ -587,7 +600,7 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
                   rows={3}
                   maxLength={500}
                   placeholder="ご希望を自由にご記入ください。（任意）"
-                  className="w-full resize-y rounded-xl border border-amber-100 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500/30"
+                  className="w-full resize-none rounded-xl border border-amber-100 bg-white px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500/30 sm:resize-y"
                 />
                 <p className="mt-1 text-right text-[10px] text-gray-400">
                   {customRequestNote.length}/500
@@ -595,7 +608,10 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
               </div>
             </div>
           )}
+          </div>
+        </div>
 
+        <div className="shrink-0 space-y-4 border-t border-gray-100 bg-white/95 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-10px_28px_-18px_rgba(15,23,42,0.14)] backdrop-blur-sm supports-[backdrop-filter]:bg-white/90 sm:px-6 sm:pb-5">
           {/* Summary card */}
           <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50/60 to-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-4">

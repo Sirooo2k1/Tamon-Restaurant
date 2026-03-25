@@ -60,18 +60,23 @@ export function KitchenLogoutBar() {
           "shadow-lg shadow-black/25 backdrop-blur-md"
         )}
       >
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:py-2.5">
+          <div className="flex min-w-0 items-start gap-3 sm:items-center">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-400/25">
               <ChefHat className="h-4 w-4" strokeWidth={2.2} aria-hidden />
             </span>
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-500/90">
+            <div className="min-w-0 flex-1 pr-0 sm:pr-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-emerald-500/90 sm:text-[11px] sm:tracking-[0.2em]">
                 Kitchen
               </p>
-              <p className="flex items-center gap-1.5 truncate text-xs font-medium text-stone-300">
-                <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-400/90" aria-hidden />
-                <span>スタッフセッション（保護済み）</span>
+              <p className="mt-1 flex items-start gap-1.5 text-[11px] font-medium leading-snug text-stone-300 sm:mt-0.5 sm:text-xs sm:leading-normal">
+                <ShieldCheck
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400/90 sm:mt-px"
+                  aria-hidden
+                />
+                <span className="min-w-0 whitespace-normal break-words">
+                  スタッフセッション（保護済み）
+                </span>
               </p>
             </div>
           </div>
@@ -79,7 +84,7 @@ export function KitchenLogoutBar() {
             type="button"
             onClick={() => setConfirmOpen(true)}
             className={cn(
-              "inline-flex shrink-0 items-center gap-2 rounded-xl border border-stone-600/80 bg-stone-900/60 px-4 py-2",
+              "inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-xl border border-stone-600/80 bg-stone-900/60 px-4 py-2.5 sm:w-auto sm:justify-center sm:py-2",
               "text-xs font-bold text-stone-200 shadow-inner transition",
               "hover:border-red-500/40 hover:bg-red-950/50 hover:text-red-100",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"

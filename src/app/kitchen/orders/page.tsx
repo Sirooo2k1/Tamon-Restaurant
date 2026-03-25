@@ -5,16 +5,13 @@
 "use client";
 
 import { Suspense, useState, useCallback, useEffect, useMemo, useRef } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useOrders } from "@/hooks/use-orders";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import type { OrderRecord, OrderStatus, LineItemCustomization, OrderItemPayload } from "@/lib/types";
 import { getLineFulfillmentStatus } from "@/lib/order-line-fulfillment";
 import {
-  LayoutDashboard,
   ReceiptText,
-  QrCode,
   Clock,
   Loader2,
   XCircle,
@@ -30,6 +27,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { CustomerPaymentReceipt } from "@/components/kitchen/CustomerPaymentReceipt";
+import { KitchenDesktopAside, KitchenMobileNav } from "@/components/kitchen/KitchenNav";
 import { CUSTOMER_HERO_GRADIENT, customerHeroShellClassName } from "@/lib/customer-hero-gradient";
 import {
   clampKitchenDate,
@@ -468,45 +466,19 @@ function OrdersPageInner() {
           <CustomerPaymentReceipt order={customerPrintOrder} />
         </div>
       )}
-      {/* SIDEBAR */}
-      <aside className="hidden w-60 flex-col border-r border-amber-100/95 bg-white px-4 py-5 text-sm lg:flex">
-        <div className="mb-8 flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-lg font-semibold text-amber-800">
-            🍜
-          </div>
-          <span className="text-xs font-semibold tracking-[0.14em] uppercase text-gray-800">
-            Ramen Admin
-          </span>
-        </div>
-        <nav className="space-y-1 text-xs font-medium">
-          <Link
-            href={`/kitchen?date=${encodeURIComponent(selectedDate)}`}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-gray-600 hover:bg-[#FAF8F0]/70 hover:text-gray-900"
-          >
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            <span>Overview</span>
-          </Link>
-          <div className="relative flex w-full items-center gap-2 rounded-xl border border-amber-200/60 bg-[#FAF8F0] px-3 py-2 text-[11px] font-medium text-gray-900 shadow-sm ring-1 ring-amber-50/80">
-            <ReceiptText className="h-3.5 w-3.5" />
-            <span>Orders</span>
-            {attentionCount > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[10px] font-bold text-white ring-2 ring-[#FAF8F0]">
-                {attentionCount > 99 ? "99+" : attentionCount}
-              </span>
-            )}
-          </div>
-          <Link
-            href="/kitchen/qr-codes"
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-gray-600 hover:bg-[#FAF8F0]/70 hover:text-gray-900"
-          >
-            <QrCode className="h-3.5 w-3.5" />
-            <span>QR Codes</span>
-          </Link>
-        </nav>
-      </aside>
+      <KitchenDesktopAside
+        active="orders"
+        dateParam={selectedDate}
+        ordersAttentionCount={attentionCount}
+      />
 
       {/* MAIN */}
       <section className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
+        <KitchenMobileNav
+          active="orders"
+          dateParam={selectedDate}
+          ordersAttentionCount={attentionCount}
+        />
         {/* Toast 更新完了 */}
         {toast && (
           <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 transition-opacity duration-200">
@@ -722,7 +694,7 @@ function OrdersPageInner() {
                       </div>
                     </div>
                     <p className="mt-2 text-sm font-semibold text-gray-800">
-                      テーブル {order.table_label ?? "—"}
+                      {order.table_label ?? "—"}
                     </p>
                   </div>
 
@@ -1016,7 +988,7 @@ function OrdersPageInner() {
                   </div>
                 </div>
                 <p className="mt-3 text-sm font-bold text-gray-800">
-                  テーブル {activeModal.order.table_label ?? "—"}
+                  {activeModal.order.table_label ?? "—"}
                 </p>
                 <p className="mt-0.5 text-xs text-gray-500">
                   受付 {formatDateShort(activeModal.order.created_at)}

@@ -16,9 +16,6 @@ import {
   tokyoDateString,
 } from "@/lib/kitchen-scope";
 import {
-  LayoutDashboard,
-  ReceiptText,
-  QrCode,
   CircleDollarSign,
   ShoppingBag,
   ListChecks,
@@ -33,6 +30,7 @@ import {
   BarChart3,
   CalendarDays,
 } from "lucide-react";
+import { KitchenDesktopAside, KitchenMobileNav } from "@/components/kitchen/KitchenNav";
 import { cn } from "@/lib/utils";
 
 /** 例: 2026年3月23日（月）— その YYYY-MM-DD を東京の暦日として解釈 */
@@ -251,44 +249,11 @@ function KitchenDashboardInner() {
 
   return (
     <main className="app-shell flex min-h-screen bg-[#FAF8F0] text-gray-800">
-      {/* SIDEBAR */}
-      <aside className="hidden w-60 flex-col border-r border-amber-200/80 bg-white px-4 py-5 text-sm lg:flex">
-        <div className="mb-8 flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-lg font-semibold text-amber-800">
-            🍜
-          </div>
-          <span className="text-xs font-semibold tracking-[0.14em] uppercase text-gray-800">
-            Ramen Admin
-          </span>
-        </div>
-
-        <nav className="space-y-1 text-xs font-medium">
-          <Link
-            href={`/kitchen?date=${encodeURIComponent(selectedDate)}`}
-            className="flex w-full items-center gap-2 rounded-xl border border-amber-200 bg-[#FAF8F0] px-3 py-2 text-[11px] font-medium text-gray-900 shadow-sm ring-1 ring-amber-100"
-          >
-            <LayoutDashboard className="h-3.5 w-3.5" />
-            <span>Overview</span>
-          </Link>
-          <Link
-            href={`/kitchen/orders?date=${encodeURIComponent(selectedDate)}`}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-gray-600 hover:bg-[#FAF8F0]/70 hover:text-gray-900"
-          >
-            <ReceiptText className="h-3.5 w-3.5" />
-            <span>Orders</span>
-          </Link>
-          <Link
-            href="/kitchen/qr-codes"
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-gray-600 hover:bg-[#FAF8F0]/70 hover:text-gray-900"
-          >
-            <QrCode className="h-3.5 w-3.5" />
-            <span>QR Codes</span>
-          </Link>
-        </nav>
-      </aside>
+      <KitchenDesktopAside active="overview" dateParam={selectedDate} />
 
       {/* MAIN CONTENT */}
       <section className="flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
+        <KitchenMobileNav active="overview" dateParam={selectedDate} />
         {/* HEADER ROW */}
         <header className="mb-6">
           <div>
@@ -632,7 +597,7 @@ function KitchenDashboardInner() {
                       >
                         <div>
                           <p className="font-semibold text-gray-800">
-                            テーブル {o.table_label ?? "—"} · #{String(o.id).slice(0, 6)}
+                            {o.table_label ?? "—"} · #{String(o.id).slice(0, 6)}
                           </p>
                           <p className="text-[10px] text-gray-500">
                             {elapsedMinutes(o.created_at)}分経過 · {o.status === "ready" ? "提供待ち" : o.status === "served" ? "提供済み" : "準備中"}

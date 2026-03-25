@@ -1,16 +1,16 @@
 /**
- * Chuyển giá trị `?table=` (mã trong QR) → nhãn hiển thị cho khách / đơn hàng.
+ * Maps `?table=` (QR payload) → short display label for guests and persisted orders.
  */
 export function tableDisplayLabelFromQrCode(code: string): string {
   const c = code.trim();
   if (!c) return "";
   const upper = c.toUpperCase();
-  if (upper === "MV") return "Mang về";
+  if (upper === "MV") return "テイクアウト";
 
   const numbered = /^T(\d+)$/i.exec(c);
-  if (numbered) return `Bàn ${numbered[1]}`;
+  if (numbered) return `テーブル${numbered[1]}`;
 
-  if (/^[AB]$/i.test(c)) return `Bàn ${c.toUpperCase()}`;
+  if (/^[AB]$/i.test(c)) return `テーブル${c.toUpperCase()}`;
 
-  return `Bàn ${c}`;
+  return `テーブル${c}`;
 }

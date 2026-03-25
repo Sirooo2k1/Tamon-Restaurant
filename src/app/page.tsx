@@ -182,41 +182,64 @@ export default function HomePage() {
   return (
     <main className="app-shell min-h-screen bg-[#FAF8F0] pb-32">
       <div className="min-h-screen w-full overflow-hidden">
-        {/* top bar */}
-        <div className="flex items-center justify-between border-b border-gray-200 bg-white/80 py-3 pl-5 pr-[4.25rem] backdrop-blur sm:px-8 sm:pr-28">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100 text-lg font-semibold text-amber-800">
-              🍜
+        {/* top bar — mobile: brand | CTA then scrollable lang; sm+: brand | lang + CTA */}
+        <div className="border-b border-gray-200 bg-white/80 backdrop-blur">
+          <div className="mx-auto max-w-[1600px] space-y-2.5 px-4 py-3 pr-[max(1rem,4.25rem)] sm:flex sm:items-center sm:justify-between sm:gap-4 sm:space-y-0 sm:px-8 sm:py-3 sm:pr-[7rem]">
+            <div className="flex items-center justify-between gap-2 sm:min-w-0 sm:flex-1 sm:justify-start sm:gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-lg font-semibold text-amber-800">
+                  🍜
+                </div>
+                <div className="min-w-0 text-xs">
+                  <p className="truncate font-semibold text-gray-800">QR Menu Ramen</p>
+                  <p className="line-clamp-2 text-[11px] leading-snug text-gray-600 sm:line-clamp-1 sm:truncate">
+                    {t.brandTagline}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/menu"
+                className="primary-btn inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap px-3 text-[11px] font-semibold sm:hidden"
+              >
+                {t.topCta}
+              </Link>
             </div>
-            <div className="text-xs">
-              <p className="font-semibold text-gray-800">QR Menu Ramen</p>
-              <p className="text-[11px] text-gray-600">{t.brandTagline}</p>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+              <div
+                className="-mx-1 overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] sm:mx-0 sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden"
+                role="navigation"
+                aria-label="Language"
+              >
+                <div className="inline-flex min-h-11 w-max max-w-full items-stretch gap-0.5 rounded-full border border-emerald-100 bg-white/90 p-1 shadow-sm sm:min-h-0 sm:w-auto sm:max-w-none sm:items-center sm:gap-1 sm:px-2.5 sm:py-1">
+                  {(["en", "ja", "zh", "ko", "vi"] as Lang[]).map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => setLang(code)}
+                      className={`touch-manipulation rounded-full px-3 py-2 text-center text-[11px] font-medium transition sm:px-2 sm:py-0.5 sm:text-[10px] ${
+                        lang === code
+                          ? "bg-emerald-400 text-white shadow-sm"
+                          : "text-gray-600 hover:bg-emerald-50/80 hover:text-emerald-800"
+                      }`}
+                    >
+                      {code === "en" && "EN"}
+                      {code === "ja" && "日本語"}
+                      {code === "zh" && "中文"}
+                      {code === "ko" && "한국어"}
+                      {code === "vi" && "VI"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Link
+                href="/menu"
+                className="primary-btn hidden h-8 shrink-0 items-center justify-center px-4 text-xs font-semibold sm:inline-flex"
+              >
+                {t.topCta}
+              </Link>
             </div>
-          </div>
-          <div className="hidden items-center gap-4 text-xs text-gray-600 sm:flex">
-            <div className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-white/80 px-2.5 py-1 shadow-sm">
-              {(["en", "ja", "zh", "ko", "vi"] as Lang[]).map((code) => (
-                <button
-                  key={code}
-                  type="button"
-                  onClick={() => setLang(code)}
-                  className={`rounded-full px-2 py-[2px] text-[10px] font-medium transition ${
-                    lang === code
-                      ? "bg-emerald-400 text-white"
-                      : "text-gray-500 hover:text-emerald-700"
-                  }`}
-                >
-                  {code === "en" && "EN"}
-                  {code === "ja" && "日本語"}
-                  {code === "zh" && "中文"}
-                  {code === "ko" && "한국어"}
-                  {code === "vi" && "VI"}
-                </button>
-              ))}
-            </div>
-            <Link href="/menu" className="primary-btn h-8 px-4 text-xs">
-              {t.topCta}
-            </Link>
           </div>
         </div>
 
