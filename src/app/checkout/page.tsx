@@ -153,13 +153,19 @@ export default function CheckoutPage() {
   /** Đơn đang theo dõi trên thiết bị — cho phép nối món nếu status + bàn khớp。会計済みなら追跡 cookie を削除 */
   const refreshMergeState = useCallback(async () => {
     try {
-      const tr = await fetch("/api/orders/tracked", { credentials: "include" }).then((r) => r.json());
+      const tr = await fetch("/api/orders/tracked", {
+        credentials: "include",
+        cache: "no-store",
+      }).then((r) => r.json());
       if (!tr?.trackingReady || !tr?.orderId) {
         setMergeTarget(null);
         setMergeEligible(false);
         return;
       }
-      const ordRes = await fetch(`/api/orders/${tr.orderId}`, { credentials: "include" });
+      const ordRes = await fetch(`/api/orders/${tr.orderId}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
       if (!ordRes.ok) {
         setMergeTarget(null);
         setMergeEligible(false);
@@ -220,35 +226,60 @@ export default function CheckoutPage() {
     setStep("sending");
     setErrorMessage("");
 
-    const payload = {
+    const linePayload = items.map((line) => ({
+      menu_item_id: line.menuItem.id,
+      menu_item_name: line.menuItem.name,
+      menu_category: line.menuItem.category,
+      quantity: line.quantity,
+      unit_price: line.unitPrice,
+      customization: line.customization,
+    }));
+
+    const buildBody = (mergeIntoCurrent: boolean) => ({
       table_id: tableLabel?.replace(/\D/g, "") || null,
       table_label: tableLabel || null,
-      items: items.map((line) => ({
-        menu_item_id: line.menuItem.id,
-        menu_item_name: line.menuItem.name,
-        menu_category: line.menuItem.category,
-        quantity: line.quantity,
-        unit_price: line.unitPrice,
-        customization: line.customization,
-      })),
+      items: linePayload,
       total_amount: subtotal,
       customer_note: undefined,
-      merge_into_current_order: mergeEligible,
-    };
+      merge_into_current_order: mergeIntoCurrent,
+    });
 
     try {
-      const res = await fetch("/api/orders", {
+      let mergeInto = mergeEligible;
+      let res = await fetch("/api/orders", {
         method: "POST",
         credentials: "include",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(buildBody(mergeInto)),
       });
-      const data = await res.json();
+      let data = (await res.json()) as { error?: string; merged?: boolean; id?: string };
+
+      /** UI と cookie / DB のズレでマージだけ失敗することがある（再スキャン後・会計済み・別タブで cookie 削除など）→ 新規送信に落とす */
+      if (!res.ok && mergeInto) {
+        const err = String(data?.error ?? "");
+        const isSoldOut = err.includes("ただいまご注文いただけない");
+        if (!isSoldOut) {
+          mergeInto = false;
+          res = await fetch("/api/orders", {
+            method: "POST",
+            credentials: "include",
+            cache: "no-store",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(buildBody(false)),
+          });
+          data = (await res.json()) as { error?: string; merged?: boolean; id?: string };
+        }
+      }
+
       if (!res.ok) throw new Error(data.error || "注文の送信に失敗しました");
+      const newId = typeof data.id === "string" ? data.id : null;
+      if (!newId) throw new Error("注文の送信に失敗しました");
       setOrderWasMerged(Boolean(data.merged));
-      setOrderId(data.id);
+      setOrderId(newId);
       clearCart();
       setStep("success");
+      void refreshMergeState();
       // Cho trình duyệt áp dụng Set-Cookie từ response trước khi banner gọi GET /tracked
       queueMicrotask(() => notifyTrackedOrderUpdated());
     } catch (e) {
