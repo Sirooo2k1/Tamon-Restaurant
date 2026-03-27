@@ -26,6 +26,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { CustomerPaymentReceipt } from "@/components/kitchen/CustomerPaymentReceipt";
 import { KitchenDesktopAside, KitchenMobileNav } from "@/components/kitchen/KitchenNav";
@@ -41,11 +42,15 @@ import {
   tokyoDateString,
   type OrdersPageSize,
 } from "@/lib/kitchen-scope";
+import { playKitchenAlertPing } from "@/lib/kitchen-alert-sound";
 import { cn } from "@/lib/utils";
 
 type ActiveOrdersModal =
   | { type: "new_order"; order: OrderRecord }
+  | { type: "appended_order"; order: OrderRecord; previousItemCount: number }
   | { type: "customer_receipt"; order: OrderRecord };
+
+type OrderItemsDigest = { updated_at: string; itemCount: number };
 
 const toYen = (vnd: number) => Math.round(vnd / 200);
 
@@ -299,6 +304,9 @@ function OrdersPageInner() {
   const [customerPrintOrder, setCustomerPrintOrder] = useState<OrderRecord | null>(null);
   const [activeModal, setActiveModal] = useState<ActiveOrdersModal | null>(null);
   const dismissedNewOrderIdsRef = useRef<Set<string>>(new Set());
+  const orderItemsDigestRef = useRef<Map<string, OrderItemsDigest>>(new Map());
+  const appendQueueRef = useRef<{ order: OrderRecord; previousItemCount: number }[]>([]);
+  const appendNotifyKeysRef = useRef<Set<string>>(new Set());
 
   /** In hóa đơn thanh toán cho khách (browser print) */
   useEffect(() => {
@@ -337,6 +345,101 @@ function OrdersPageInner() {
       return { type: "new_order", order: next };
     });
   }, [orders]);
+
+  /**
+   * 同じ注文に客が品を追加（マージ）→ ステータスが pending 以外でも行数が増える。
+   * pending のままマージされた場合は新規モーダルの注文内容を最新に差し替え。
+   */
+  useEffect(() => {
+    const digests = orderItemsDigestRef.current;
+    const currentIds = new Set<string>();
+
+    for (const o of orders) {
+      currentIds.add(o.id);
+      const itemCount = o.items?.length ?? 0;
+      const nextDigest: OrderItemsDigest = { updated_at: o.updated_at, itemCount };
+      const old = digests.get(o.id);
+      digests.set(o.id, nextDigest);
+
+      if (!old) continue;
+      const terminal = o.status === "paid" || o.status === "cancelled";
+      if (terminal) continue;
+      if (itemCount <= old.itemCount || nextDigest.updated_at === old.updated_at) continue;
+
+      if (o.status === "pending") {
+        setActiveModal((prev) =>
+          prev?.type === "new_order" && prev.order.id === o.id
+            ? { type: "new_order", order: o }
+            : prev
+        );
+        continue;
+      }
+
+      const dedupeKey = `${o.id}:${nextDigest.updated_at}`;
+      if (appendNotifyKeysRef.current.has(dedupeKey)) continue;
+      appendNotifyKeysRef.current.add(dedupeKey);
+      appendQueueRef.current.push({ order: o, previousItemCount: old.itemCount });
+    }
+
+    for (const id of Array.from(digests.keys())) {
+      if (!currentIds.has(id)) digests.delete(id);
+    }
+  }, [orders]);
+
+  useEffect(() => {
+    if (activeModal?.type === "customer_receipt" || activeModal?.type === "new_order") {
+      return;
+    }
+    if (appendQueueRef.current.length === 0) return;
+    setActiveModal((prev) => {
+      if (prev?.type === "customer_receipt" || prev?.type === "new_order") return prev;
+      if (prev?.type === "appended_order") return prev;
+      const next = appendQueueRef.current.shift();
+      if (!next) return prev;
+      return {
+        type: "appended_order",
+        order: next.order,
+        previousItemCount: next.previousItemCount,
+      };
+    });
+  }, [orders, activeModal]);
+
+  /** 新規／追加モーダル表示時に短い通知音（同一画面内の重複は抑える） */
+  const alertSoundLastRef = useRef<{
+    modal: ActiveOrdersModal["type"] | null;
+    newFingerprint: string | null;
+    appendKey: string | null;
+  }>({ modal: null, newFingerprint: null, appendKey: null });
+
+  useEffect(() => {
+    if (!activeModal) {
+      alertSoundLastRef.current = { modal: null, newFingerprint: null, appendKey: null };
+      return;
+    }
+    if (activeModal.type === "customer_receipt") return;
+
+    if (activeModal.type === "new_order") {
+      const fp = `${activeModal.order.id}:${activeModal.order.items.length}:${activeModal.order.updated_at}`;
+      const prev = alertSoundLastRef.current;
+      if (prev.modal !== "new_order" || prev.newFingerprint !== fp) {
+        playKitchenAlertPing("new");
+        alertSoundLastRef.current = { modal: "new_order", newFingerprint: fp, appendKey: null };
+      }
+      return;
+    }
+
+    if (activeModal.type === "appended_order") {
+      const key = `${activeModal.order.id}:${activeModal.order.updated_at}:${activeModal.previousItemCount}`;
+      if (alertSoundLastRef.current.appendKey !== key) {
+        playKitchenAlertPing("append");
+        alertSoundLastRef.current = {
+          modal: "appended_order",
+          newFingerprint: null,
+          appendKey: key,
+        };
+      }
+    }
+  }, [activeModal]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -1067,6 +1170,132 @@ function OrdersPageInner() {
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : null}
                 確認して閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 追加注文（同一伝票へのマージ）— 新規 pending モーダルとは別枠 */}
+      {activeModal?.type === "appended_order" && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
+          <div
+            className="max-h-[90vh] w-full max-w-lg overflow-hidden rounded-[1.35rem] border border-violet-200/90 bg-white shadow-[0_28px_80px_-20px_rgba(91,33,182,0.35)]"
+            role="dialog"
+            aria-labelledby="append-order-title"
+          >
+            <div className="relative overflow-hidden border-b border-violet-100/90 bg-gradient-to-br from-violet-600 via-indigo-600 to-violet-700 px-5 py-5 text-white">
+              <div
+                className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl"
+                aria-hidden
+              />
+              <div className="pointer-events-none absolute bottom-0 left-1/4 h-px w-1/2 bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+              <div className="relative flex items-start gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-inner ring-1 ring-white/25">
+                  <Sparkles className="h-6 w-6 text-amber-200" strokeWidth={2.2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p
+                    id="append-order-title"
+                    className="text-[11px] font-bold uppercase tracking-[0.2em] text-violet-100/95"
+                  >
+                    同一お席 · 追加注文
+                  </p>
+                  <p className="mt-1.5 text-xl font-bold leading-snug tracking-tight">
+                    新しい品目が追加されました
+                  </p>
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-violet-100/95">
+                    お客様が同じ注文に手を加えました。下記の追加分を確認し、調理・提供フローに反映してください。
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="max-h-[min(60vh,28rem)] overflow-y-auto space-y-4 px-5 py-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-gray-100/95 bg-gradient-to-br from-slate-50/95 to-white px-4 py-3.5 shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-violet-100 px-2.5 py-1 text-[11px] font-bold text-violet-900">
+                    +{activeModal.order.items.length - activeModal.previousItemCount} 品追加
+                  </span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                      STATUS_CONFIG[activeModal.order.status]?.badgeClass ?? "bg-gray-100 text-gray-700"
+                    )}
+                  >
+                    {STATUS_CONFIG[activeModal.order.status]?.labelJa ?? activeModal.order.status}
+                  </span>
+                </div>
+                <p className="font-mono text-xs font-bold tabular-nums text-gray-500">
+                  #{String(activeModal.order.id).slice(0, 8).toUpperCase()}
+                </p>
+              </div>
+
+              <div>
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  お席
+                </p>
+                <p className="text-lg font-bold text-gray-900">
+                  {activeModal.order.table_label?.trim() || "—"}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  更新 {formatDateShort(activeModal.order.updated_at)}
+                </p>
+              </div>
+
+              <div>
+                <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                  <span className="h-px flex-1 bg-gradient-to-r from-violet-200/80 to-transparent" />
+                  追加分の内容
+                  <span className="h-px flex-1 bg-gradient-to-l from-violet-200/80 to-transparent" />
+                </p>
+                <ul className="space-y-2 rounded-2xl border border-violet-100/80 bg-violet-50/35 p-3">
+                  {(
+                    activeModal.order.items.slice(activeModal.previousItemCount) as OrderItemPayload[]
+                  ).map((item, idx) => {
+                    const custom = formatCustomization(item.customization);
+                    const lineTotal = item.unit_price * item.quantity;
+                    const lineNameJa = displayMenuItemNameJa(item.menu_item_id, item.menu_item_name);
+                    return (
+                      <li
+                        key={`${item.menu_item_id}-${activeModal.previousItemCount + idx}`}
+                        className="rounded-xl border border-white/90 bg-white/90 px-3 py-2.5 shadow-sm"
+                      >
+                        <div className="flex justify-between gap-2 font-semibold text-gray-900">
+                          <span className="min-w-0">
+                            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-800">
+                              +
+                            </span>
+                            {lineNameJa}
+                            <span className="ml-1 font-normal text-gray-500">×{item.quantity}</span>
+                          </span>
+                          <span className="shrink-0 tabular-nums text-violet-700">¥{toYen(lineTotal)}</span>
+                        </div>
+                        {custom && (
+                          <p className="mt-1 text-[11px] leading-relaxed text-gray-600">{custom}</p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-emerald-100/90 bg-emerald-50/50 px-4 py-3 text-center">
+                <p className="text-xs font-semibold text-emerald-950">
+                  伝票合計（参考）
+                  <span className="ml-2 font-mono text-sm tabular-nums text-emerald-800">
+                    ¥{toYen(activeModal.order.total_amount)}
+                  </span>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border border-violet-200/90 bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition hover:from-violet-500 hover:to-indigo-500 active:scale-[0.99]"
+                onClick={() => setActiveModal(null)}
+              >
+                <Check className="h-4 w-4 opacity-95" strokeWidth={2.5} />
+                確認しました · 閉じる
               </button>
             </div>
           </div>

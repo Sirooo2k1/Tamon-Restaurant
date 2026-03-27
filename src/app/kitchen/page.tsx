@@ -15,6 +15,7 @@ import {
   rollTokyoYmd,
   tokyoDateString,
 } from "@/lib/kitchen-scope";
+import { tableLabelKitchenUnpaidBadge } from "@/lib/kitchen-table-display";
 import {
   CircleDollarSign,
   ShoppingBag,
@@ -456,7 +457,7 @@ function KitchenDashboardInner() {
                         >
                           <div className="flex min-w-0 flex-1 items-center gap-3">
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-xs font-bold text-amber-800">
-                              {o.table_label ?? "—"}
+                              {tableLabelKitchenUnpaidBadge(o.table_label)}
                             </div>
                             <div className="min-w-0">
                               <p className="text-[10px] font-semibold text-emerald-800/90">
