@@ -1,5 +1,6 @@
 import type { OrderItemPayload, OrderStatus } from "@/lib/types";
 import { isNoodleOrderLine } from "@/lib/order-line-noodle";
+import { canonicalTableCodeFromLabel } from "@/lib/restaurant-qr-tables";
 
 /**
  * Gộp thêm món vào **cùng một đơn** đang theo dõi (cookie) để:
@@ -33,7 +34,12 @@ export function tableLabelsMatch(
   a: string | null | undefined,
   b: string | null | undefined
 ): boolean {
-  return (a ?? "").trim() === (b ?? "").trim();
+  const sa = (a ?? "").trim();
+  const sb = (b ?? "").trim();
+  if (sa === sb) return true;
+  const ca = canonicalTableCodeFromLabel(sa);
+  const cb = canonicalTableCodeFromLabel(sb);
+  return ca !== null && cb !== null && ca === cb;
 }
 
 export function mergeOrderItems(

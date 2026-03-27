@@ -32,6 +32,7 @@ import {
 } from "@/lib/recent-order-tracking";
 import { CartDrawer } from "@/components/CartDrawer";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
+import { menuHrefForCustomerNavigation } from "@/lib/menu-table-session";
 
 const toYen = (vnd: number) => Math.round(vnd / 200);
 
@@ -311,7 +312,7 @@ export default function CheckoutPage() {
               <p className="mt-1 text-sm text-gray-500">メニューから商品を追加してください。</p>
             </div>
             <Link
-              href="/menu"
+              href={menuHrefForCustomerNavigation(tableLabel)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-100/90 bg-emerald-50/90 px-5 py-3.5 text-sm font-semibold text-emerald-900 shadow-sm ring-1 ring-emerald-50/85 transition hover:bg-emerald-100/95"
             >
               メニューを見る
@@ -442,7 +443,7 @@ export default function CheckoutPage() {
         <CheckCircle2 className="h-9 w-9 text-emerald-400" strokeWidth={1.85} />
         <p className="mt-4 text-gray-600">ご注文は完了しました。</p>
         <Link
-          href="/menu"
+          href={menuHrefForCustomerNavigation(tableLabel)}
           className="mt-6 inline-flex rounded-2xl border border-emerald-100/90 bg-emerald-50/90 px-6 py-3 text-sm font-semibold text-emerald-900 shadow-sm ring-1 ring-emerald-50/85 transition hover:bg-emerald-100/95"
         >
           メニューへ
@@ -485,7 +486,7 @@ export default function CheckoutPage() {
       <CartDrawer />
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
         <Link
-          href="/menu"
+          href={menuHrefForCustomerNavigation(tableLabel)}
           className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
         >
           <ChevronLeft className="h-4 w-4" />

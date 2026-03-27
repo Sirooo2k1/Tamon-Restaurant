@@ -27,6 +27,7 @@ import { CUSTOMER_HERO_GRADIENT, customerHeroShellClassName } from "@/lib/custom
 import { clearTrackedOrderOnServer } from "@/lib/recent-order-tracking";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import { displayMenuItemNameJa } from "@/lib/menu-display";
+import { menuHrefForCustomerNavigation } from "@/lib/menu-table-session";
 
 function stripGuestKeyFromUrl(): void {
   if (typeof window === "undefined") return;
@@ -308,7 +309,7 @@ export function OrderTrackingExperience({
         {showNav && (
           <div className="mt-6 text-center">
             <Link
-              href="/menu"
+              href={menuHrefForCustomerNavigation(null)}
               className="inline-flex rounded-2xl border border-emerald-100/90 bg-emerald-50/90 px-6 py-3 text-sm font-semibold text-emerald-900 shadow-sm ring-1 ring-emerald-50/85 transition hover:bg-emerald-100/95"
             >
               メニューへ
@@ -622,7 +623,7 @@ export function OrderTrackingExperience({
       {showNav && (
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
-            href="/menu"
+            href={menuHrefForCustomerNavigation(order.table_label)}
             className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/80 py-3.5 text-sm font-bold text-emerald-950 shadow-[0_10px_28px_-18px_rgba(16,185,129,0.14)] transition hover:border-emerald-300 hover:shadow-[0_14px_32px_-16px_rgba(16,185,129,0.12)] active:scale-[0.99]"
           >
             <RefreshCw className="h-4 w-4" aria-hidden />

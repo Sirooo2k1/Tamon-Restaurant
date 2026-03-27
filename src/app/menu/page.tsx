@@ -9,6 +9,11 @@ import { AddToCartModal } from "@/components/AddToCartModal";
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
 import { tableDisplayLabelFromQrCode } from "@/lib/table-display-label";
+import {
+  loadRememberedMenuTableCode,
+  rememberMenuTableCodeFromQrParam,
+  syncRememberedMenuTableFromDisplayLabel,
+} from "@/lib/menu-table-session";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -123,41 +128,51 @@ function MenuContent() {
   useEffect(() => {
     const table = searchParams.get("table");
     if (table) {
+      rememberMenuTableCodeFromQrParam(table);
       setTableLabel(tableDisplayLabelFromQrCode(table));
       return;
     }
 
-    /** 「進捗→メニュー」は `/menu` のみ（`?table=` なし）→ 卓が消えて決済できなくなる。追跡 cookie があれば DB の table_label で復元 */
+    /**
+     * `?table=` なし（チェックアウトの「メニューに戻る」等）→ cookie 未設定だと卓が消えていた。
+     * 追跡 API → sessionStorage（同一タブで前にスキャンした QR）の順で復元。
+     */
     let cancelled = false;
     (async () => {
+      const applyRemembered = () => {
+        const code = loadRememberedMenuTableCode();
+        if (code) {
+          setTableLabel(tableDisplayLabelFromQrCode(code));
+        } else {
+          setTableLabel(null);
+        }
+      };
       try {
         const tr = await fetch("/api/orders/tracked", {
           credentials: "include",
           cache: "no-store",
         }).then((r) => r.json());
         if (cancelled) return;
-        if (!tr?.trackingReady || !tr?.orderId) {
-          setTableLabel(null);
-          return;
+        if (tr?.trackingReady && tr?.orderId) {
+          const ordRes = await fetch(`/api/orders/${tr.orderId}`, {
+            credentials: "include",
+            cache: "no-store",
+          });
+          if (cancelled) return;
+          if (ordRes.ok) {
+            const order = (await ordRes.json()) as { table_label?: string | null };
+            const label = order?.table_label;
+            if (typeof label === "string" && label.trim()) {
+              const t = label.trim();
+              setTableLabel(t);
+              syncRememberedMenuTableFromDisplayLabel(t);
+              return;
+            }
+          }
         }
-        const ordRes = await fetch(`/api/orders/${tr.orderId}`, {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (cancelled) return;
-        if (!ordRes.ok) {
-          setTableLabel(null);
-          return;
-        }
-        const order = (await ordRes.json()) as { table_label?: string | null };
-        const label = order?.table_label;
-        if (typeof label === "string" && label.trim()) {
-          setTableLabel(label.trim());
-        } else {
-          setTableLabel(null);
-        }
+        applyRemembered();
       } catch {
-        if (!cancelled) setTableLabel(null);
+        if (!cancelled) applyRemembered();
       }
     })();
 
