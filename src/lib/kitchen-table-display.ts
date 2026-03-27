@@ -1,16 +1,22 @@
 /**
- * キッチンダッシュ「未会計の注文」リスト用 — カウンター卓だけバッジ向けに短くする。
- * それ以外（テーブル A・B・テイクアウト等）はそのまま。
+ * キッチンダッシュ「未会計の注文」「会計済みの注文」の卓バッジ用（短く表示）。
+ * それ以外の画面は `table_label` 生のまま。
  */
-export function tableLabelKitchenUnpaidBadge(
+export function tableLabelKitchenDashBadge(
   tableLabel: string | null | undefined
 ): string {
   const t = (tableLabel ?? "").trim();
   if (!t) return "—";
+
   const counter = /^カウンター(\d+)番$/.exec(t);
-  if (counter) return `C${counter[1]}`;
-  /** 旧 guest 表示「テーブル{n}」＝カウンター T{n} と同じ卓のことが多い */
+  if (counter) return `${counter[1]}番`;
+
+  const tableAb = /^テーブル\s*([AB])$/i.exec(t);
+  if (tableAb) return tableAb[1].toUpperCase();
+
+  /** 旧表示「テーブル{n}」＝カウンター T{n} 寄り */
   const legacyNum = /^テーブル(\d+)$/.exec(t);
-  if (legacyNum) return `C${legacyNum[1]}`;
+  if (legacyNum) return `${legacyNum[1]}番`;
+
   return t;
 }

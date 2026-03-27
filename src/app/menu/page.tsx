@@ -198,19 +198,22 @@ function MenuContent() {
         const res = await fetch(`/api/menu/availability?t=${Date.now()}`, {
           cache: "no-store",
         });
-        if (!res.ok || cancelled) {
-          if (!res.ok && process.env.NODE_ENV === "development") {
+        if (cancelled) return;
+        if (!res.ok) {
+          if (process.env.NODE_ENV === "development") {
             console.warn("[menu] /api/menu/availability HTTP", res.status, await res.text().catch(() => ""));
           }
+          /** API 失敗時に前回の soldOutIds を残すと、DBで提供中に戻しても画面が売り切れのまま固まる */
+          setSoldOutIds([]);
           return;
         }
         const j = (await res.json()) as { soldOutIds?: string[]; _debugError?: string };
         if (j._debugError && process.env.NODE_ENV === "development") {
           console.warn("[menu] sold-out API:", j._debugError);
         }
-        if (!cancelled) setSoldOutIds(Array.isArray(j.soldOutIds) ? j.soldOutIds : []);
+        setSoldOutIds(Array.isArray(j.soldOutIds) ? j.soldOutIds : []);
       } catch {
-        /* keep previous */
+        if (!cancelled) setSoldOutIds([]);
       }
     }
     void pull();

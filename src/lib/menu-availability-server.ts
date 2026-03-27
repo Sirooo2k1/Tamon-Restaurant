@@ -10,6 +10,11 @@ import {
 import { getDevSoldOutGroupIds, setDevGroupSoldOut } from "@/lib/dev-menu-availability";
 import { getSupabaseForOrdersOrNull } from "@/lib/supabase-api";
 
+/** `false` のとき 売り切れは Supabase を読まず dev のメモリのみ（ダッシュボードで直しても menu API は変わらない） */
+export function isMenuSoldOutBackedBySupabase(): boolean {
+  return getSupabaseForOrdersOrNull() !== null;
+}
+
 async function getSoldOutGroupSet(): Promise<Set<MainNoodleGroupId>> {
   const db = getSupabaseForOrdersOrNull();
   if (!db) {
