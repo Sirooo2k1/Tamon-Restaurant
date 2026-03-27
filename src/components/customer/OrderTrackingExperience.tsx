@@ -28,6 +28,7 @@ import { clearTrackedOrderOnServer } from "@/lib/recent-order-tracking";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import { displayMenuItemNameJa } from "@/lib/menu-display";
 import { menuHrefForCustomerNavigation } from "@/lib/menu-table-session";
+import { GuestAccessReceiptPreview } from "@/components/customer/GuestAccessReceiptPreview";
 
 function stripGuestKeyFromUrl(): void {
   if (typeof window === "undefined") return;
@@ -144,7 +145,9 @@ async function fetchOrder(
   | { ok: true; data: OrderRecord }
   | { ok: false; message: string; code?: string; httpStatus: number }
 > {
-  const qs = guestKey?.trim() ? `?k=${encodeURIComponent(guestKey.trim())}` : "";
+  const qs = guestKey?.trim()
+    ? `?k=${encodeURIComponent(guestKey.trim())}&format=json`
+    : "";
   const res = await fetch(`/api/orders/${id}${qs}`, {
     credentials: "include",
     cache: "no-store",
@@ -299,9 +302,7 @@ export function OrderTrackingExperience({
               <br />
               またのご来店を、心よりお待ちしております。
             </p>
-            <p className="mt-5 border-t border-emerald-100/80 pt-5 text-[12px] leading-relaxed text-gray-500">
-              ご注文内容をご確認になりたい場合は、ご注文時にご利用の端末、またはお席のQRコードのリンクからご覧いただけます。
-            </p>
+            <GuestAccessReceiptPreview orderId={orderId} />
           </div>
         ) : (
           <p className="text-center text-gray-700">{errText}</p>

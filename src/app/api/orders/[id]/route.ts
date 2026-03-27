@@ -69,6 +69,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
   } else {
     if (key === tokenStr) {
+      /** `fetch` + JSON 用: リダイレクトだと一部クライアントで二重リクエスト扱いになるため `format=json` で本文+Set-Cookie を一度に返す */
+      const jsonMode = request.nextUrl.searchParams.get("format") === "json";
+      if (jsonMode) {
+        const res = NextResponse.json(sanitizeOrderRow(row), { headers: NO_STORE });
+        setGuestOrderCookies(res, id, tokenStr);
+        return res;
+      }
       const clean = request.nextUrl.clone();
       clean.searchParams.delete("k");
       const res = NextResponse.redirect(clean);
