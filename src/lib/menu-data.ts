@@ -97,6 +97,7 @@ export const menuItems: MenuItem[] = [
     description: "スープは同量です。替え玉できません。",
     category: "tamon_tsukemen",
     price: Y(1200),
+    highlight: "signature",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -250,7 +251,6 @@ export const menuItems: MenuItem[] = [
     description: "全部頼むならこちらがお得!",
     category: "topping",
     price: Y(500),
-    highlight: "popular",
     options: [],
   },
   // --- ライス ---

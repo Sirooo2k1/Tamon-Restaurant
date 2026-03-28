@@ -77,9 +77,18 @@ function MenuItemRow({
                 売り切れ
               </span>
             )}
+            {item.highlight === "signature" && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800"
+                title="全粒粉の多聞麺が一番人気です"
+              >
+                <Sparkles className="h-3 w-3 shrink-0 text-emerald-700" aria-hidden />
+                当店一番人気 · 多聞
+              </span>
+            )}
             {item.highlight === "popular" && (
-              <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                人気No.1
+              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+              人気 No.1
               </span>
             )}
             {item.highlight === "recommended" && (
