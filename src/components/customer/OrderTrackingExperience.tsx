@@ -29,6 +29,7 @@ import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import { displayMenuItemNameJa } from "@/lib/menu-display";
 import { menuHrefForCustomerNavigation } from "@/lib/menu-table-session";
 import { GuestAccessReceiptPreview } from "@/components/customer/GuestAccessReceiptPreview";
+import { CustomerPaymentReceipt } from "@/components/kitchen/CustomerPaymentReceipt";
 
 function stripGuestKeyFromUrl(): void {
   if (typeof window === "undefined") return;
@@ -245,7 +246,9 @@ export function OrderTrackingExperience({
 
   const phase = order ? statusToPhase(order.status) : 0;
   const isCancelled = order?.status === "cancelled";
-  const isPaid = order?.status === "paid";
+  const isPaid =
+    order?.status === "paid" ||
+    String(order?.payment_status ?? "").toLowerCase() === "paid";
 
   const copy = order ? STATUS_COPY[order.status] : null;
 
@@ -389,8 +392,17 @@ export function OrderTrackingExperience({
         )}
       </OrderTrackingCard>
 
+      {/* 会計完了後はキッチン「お客様用レシートを印刷」と同一コンポーネントで表示 */}
+      {!isCancelled && isPaid && (
+        <div className="mt-6 overflow-hidden rounded-[1.35rem] border border-emerald-200/50 bg-white shadow-[0_24px_60px_-28px_rgba(6,95,70,0.18),0_0_0_1px_rgba(16,185,129,0.06)]">
+          <div className="p-4 sm:p-5">
+            <CustomerPaymentReceipt order={order} />
+          </div>
+        </div>
+      )}
+
       {/* Stepper — same card surface as hero */}
-      {!isCancelled && (
+      {!isCancelled && !isPaid && (
         <OrderTrackingCard className="mt-6" innerClassName="p-4 sm:p-5">
           <div className="mb-4 flex items-center justify-center gap-2">
             <span
@@ -476,7 +488,7 @@ export function OrderTrackingExperience({
       )}
 
       {/* 麺類のお届けサマリー（進捗の数値は麺のみ。他カテゴリは一覧で） */}
-      {!isCancelled && noodleDelivery.total > 0 && (
+      {!isCancelled && !isPaid && noodleDelivery.total > 0 && (
         <div className="relative mt-5 overflow-hidden rounded-[1.5rem] border border-emerald-100/85 bg-gradient-to-br from-emerald-50/95 via-white to-slate-50/40 shadow-[0_20px_50px_-28px_rgba(16,185,129,0.12)] ring-1 ring-emerald-950/[0.035]">
           <div className="border-b border-emerald-100/60 bg-white/60 px-4 py-3 backdrop-blur-[4px] sm:px-5 sm:py-3.5">
             <div className="flex items-start gap-3">
@@ -512,7 +524,10 @@ export function OrderTrackingExperience({
         </div>
       )}
 
-      {!isCancelled && itemLines.length > 0 && noodleDelivery.total === 0 && (
+      {!isCancelled &&
+        !isPaid &&
+        itemLines.length > 0 &&
+        noodleDelivery.total === 0 && (
         <div className="relative mt-5 rounded-2xl border border-gray-200/90 bg-gray-50/80 px-4 py-3 text-[11px] leading-relaxed text-gray-600">
           <span className="font-semibold text-gray-800">麺類のご注文がない場合</span>
           <br />
@@ -520,106 +535,108 @@ export function OrderTrackingExperience({
         </div>
       )}
 
-      {/* Order summary — same card surface as hero */}
-      <OrderTrackingCard className="mt-5">
-        <button
-          type="button"
-          onClick={() => setShowItems((v) => !v)}
-          className="group flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/55"
-        >
-          <div className="min-w-0">
-            <span className="text-sm font-bold tracking-tight text-gray-900">ご注文内容</span>
-            {noodleDelivery.total > 0 && (
-              <p className="mt-0.5 text-[11px] font-medium text-emerald-700/90">
-                麺類 お届け {noodleDelivery.delivered}/{noodleDelivery.total}
-              </p>
-            )}
-            {hasNonNoodleItems && (
-              <p className="mt-0.5 text-[10px] text-gray-500">
-                全品のお届け状況は各行をご確認ください（麺以外も表示されます）
-              </p>
-            )}
-          </div>
-          <span className="flex shrink-0 items-center gap-2">
-            <span className="rounded-lg border border-emerald-100/90 bg-emerald-50/70 px-2 py-1 text-xs font-semibold tabular-nums text-emerald-900 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset]">
-              ¥{toYen(order.total_amount)}
+      {/* Order summary — 会計前のみ（会計後は CustomerPaymentReceipt に明細あり） */}
+      {!isCancelled && !isPaid && (
+        <OrderTrackingCard className="mt-5">
+          <button
+            type="button"
+            onClick={() => setShowItems((v) => !v)}
+            className="group flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/55"
+          >
+            <div className="min-w-0">
+              <span className="text-sm font-bold tracking-tight text-gray-900">ご注文内容</span>
+              {noodleDelivery.total > 0 && (
+                <p className="mt-0.5 text-[11px] font-medium text-emerald-700/90">
+                  麺類 お届け {noodleDelivery.delivered}/{noodleDelivery.total}
+                </p>
+              )}
+              {hasNonNoodleItems && (
+                <p className="mt-0.5 text-[10px] text-gray-500">
+                  全品のお届け状況は各行をご確認ください（麺以外も表示されます）
+                </p>
+              )}
+            </div>
+            <span className="flex shrink-0 items-center gap-2">
+              <span className="rounded-lg border border-emerald-100/90 bg-emerald-50/70 px-2 py-1 text-xs font-semibold tabular-nums text-emerald-900 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset]">
+                ¥{toYen(order.total_amount)}
+              </span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200/90 bg-white text-gray-500 shadow-sm transition group-hover:border-emerald-200 group-hover:text-emerald-700">
+                {showItems ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </span>
             </span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200/90 bg-white text-gray-500 shadow-sm transition group-hover:border-emerald-200 group-hover:text-emerald-700">
-              {showItems ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </span>
-          </span>
-        </button>
-        {showItems && (
-          <ul className="border-t border-emerald-100/35 bg-white/30 px-2 py-1.5 backdrop-blur-[4px] sm:px-3">
-            {itemLines.map((line, idx) => {
-              const delivered = isLineDeliveredForCustomerView(line, order.status);
-              const noodleLine = formatNoodlePortionLineJa(line.customization);
-              return (
-                <li key={idx} className="relative border-b border-emerald-100/25 py-2 last:border-0">
-                  <div
-                    className={`relative flex items-start justify-between gap-2.5 overflow-hidden rounded-[1rem] px-2.5 py-2.5 transition-shadow sm:gap-3 sm:px-3.5 sm:py-3 ${
-                      delivered
-                        ? "bg-gradient-to-r from-emerald-50/98 via-white to-teal-50/30 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_10px_30px_-18px_rgba(16,185,129,0.11)] ring-1 ring-emerald-100/80 before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-gradient-to-b before:from-emerald-200 before:to-teal-200 before:content-['']"
-                        : "bg-white/90 shadow-sm ring-1 ring-gray-100/90 hover:shadow-md"
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1 pl-1 sm:pl-1.5">
-                      <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
-                        <p className="text-sm font-semibold leading-snug tracking-tight text-gray-900">
-                          {displayMenuItemNameJa(line.menu_item_id, line.menu_item_name)}
-                          <span className="ml-1 font-medium tabular-nums text-gray-500">×{line.quantity}</span>
-                        </p>
-                        {noodleLine && (
-                          <p className="mt-1 text-[11px] font-medium leading-snug text-emerald-900/85">
-                            {noodleLine}
+          </button>
+          {showItems && (
+            <ul className="border-t border-emerald-100/35 bg-white/30 px-2 py-1.5 backdrop-blur-[4px] sm:px-3">
+              {itemLines.map((line, idx) => {
+                const delivered = isLineDeliveredForCustomerView(line, order.status);
+                const noodleLine = formatNoodlePortionLineJa(line.customization);
+                return (
+                  <li key={idx} className="relative border-b border-emerald-100/25 py-2 last:border-0">
+                    <div
+                      className={`relative flex items-start justify-between gap-2.5 overflow-hidden rounded-[1rem] px-2.5 py-2.5 transition-shadow sm:gap-3 sm:px-3.5 sm:py-3 ${
+                        delivered
+                          ? "bg-gradient-to-r from-emerald-50/98 via-white to-teal-50/30 shadow-[0_1px_0_rgba(255,255,255,0.9)_inset,0_10px_30px_-18px_rgba(16,185,129,0.11)] ring-1 ring-emerald-100/80 before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-gradient-to-b before:from-emerald-200 before:to-teal-200 before:content-['']"
+                          : "bg-white/90 shadow-sm ring-1 ring-gray-100/90 hover:shadow-md"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1 pl-1 sm:pl-1.5">
+                        <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
+                          <p className="text-sm font-semibold leading-snug tracking-tight text-gray-900">
+                            {displayMenuItemNameJa(line.menu_item_id, line.menu_item_name)}
+                            <span className="ml-1 font-medium tabular-nums text-gray-500">×{line.quantity}</span>
                           </p>
-                        )}
-                        <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-800">
-                          ¥{toYen(line.unit_price * line.quantity)}
-                        </span>
-                      </div>
-                      {delivered && (
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center rounded-full border border-emerald-100/90 bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-800 shadow-sm sm:px-2.5 sm:text-[10px]">
-                            お届け済み
-                          </span>
-                          <span className="text-[9px] font-medium text-emerald-700/75 sm:text-[10px]">
-                            お席に到着
+                          {noodleLine && (
+                            <p className="mt-1 text-[11px] font-medium leading-snug text-emerald-900/85">
+                              {noodleLine}
+                            </p>
+                          )}
+                          <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-800">
+                            ¥{toYen(line.unit_price * line.quantity)}
                           </span>
                         </div>
-                      )}
+                        {delivered && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center rounded-full border border-emerald-100/90 bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-800 shadow-sm sm:px-2.5 sm:text-[10px]">
+                              お届け済み
+                            </span>
+                            <span className="text-[9px] font-medium text-emerald-700/75 sm:text-[10px]">
+                              お席に到着
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 self-center pt-0.5 sm:self-start sm:pt-1">
+                        {delivered ? (
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-emerald-50/95 text-emerald-800 shadow-[0_3px_12px_-4px_rgba(16,185,129,0.14)] ring-2 ring-emerald-100/80 sm:h-9 sm:w-9">
+                            <CheckCircle2
+                              className="h-[1.05rem] w-[1.05rem] sm:h-[1.125rem] sm:w-[1.125rem]"
+                              strokeWidth={2.15}
+                              aria-hidden
+                            />
+                          </span>
+                        ) : (
+                          <span
+                            className="flex h-8 w-8 items-center justify-center rounded-full border-[1.5px] border-dashed border-emerald-300/80 bg-gradient-to-b from-white to-emerald-50/70 text-[11px] font-bold leading-none tracking-tight text-emerald-900/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] ring-1 ring-emerald-100/50 sm:h-9 sm:w-9 sm:text-xs"
+                            title="お席へ未お届け"
+                            aria-label="まだお席へお届けしていません"
+                          >
+                            未
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex shrink-0 self-center pt-0.5 sm:self-start sm:pt-1">
-                      {delivered ? (
-                        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-white to-emerald-50/95 text-emerald-800 shadow-[0_3px_12px_-4px_rgba(16,185,129,0.14)] ring-2 ring-emerald-100/80 sm:h-9 sm:w-9">
-                          <CheckCircle2
-                            className="h-[1.05rem] w-[1.05rem] sm:h-[1.125rem] sm:w-[1.125rem]"
-                            strokeWidth={2.15}
-                            aria-hidden
-                          />
-                        </span>
-                      ) : (
-                        <span
-                          className="flex h-8 w-8 items-center justify-center rounded-full border-[1.5px] border-dashed border-emerald-300/80 bg-gradient-to-b from-white to-emerald-50/70 text-[11px] font-bold leading-none tracking-tight text-emerald-900/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] ring-1 ring-emerald-100/50 sm:h-9 sm:w-9 sm:text-xs"
-                          title="お席へ未お届け"
-                          aria-label="まだお席へお届けしていません"
-                        >
-                          未
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        <p className="border-t border-emerald-100/35 bg-white/40 px-4 py-2.5 text-center text-[10px] leading-relaxed text-gray-500 backdrop-blur-[4px]">
-          <span className="tabular-nums">最終更新 {formatTime(order.updated_at)}</span>
-          <span className="mx-1.5 text-emerald-200/80">·</span>
-          この画面を開いたままでも最新に更新されます
-        </p>
-      </OrderTrackingCard>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <p className="border-t border-emerald-100/35 bg-white/40 px-4 py-2.5 text-center text-[10px] leading-relaxed text-gray-500 backdrop-blur-[4px]">
+            <span className="tabular-nums">最終更新 {formatTime(order.updated_at)}</span>
+            <span className="mx-1.5 text-emerald-200/80">·</span>
+            この画面を開いたままでも最新に更新されます
+          </p>
+        </OrderTrackingCard>
+      )}
 
       {showNav && (
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
