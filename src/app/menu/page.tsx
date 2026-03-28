@@ -97,19 +97,9 @@ function MenuItemRow({
             ¥{toYen(item.price)}
           </span>
         </div>
-        {item.description && (
-          <p
-            className={cn(
-              "mt-1 text-xs sm:text-sm",
-              soldOut ? "text-gray-400" : "text-gray-600"
-            )}
-          >
-            {item.description}
-          </p>
-        )}
         {soldOut ? (
           <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50/80 px-3 py-2 text-[12px] font-medium text-rose-900/90">
-            申し訳ございません、本日はご注文いただけません。
+            申し訳ございません、ただ今はご注文いただけません。
           </p>
         ) : (
           <button

@@ -54,12 +54,6 @@ export default function QRCodesPage() {
             <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-amber-100/90 bg-white/90 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-lg font-bold text-stone-900">卓用オーダーQR</h1>
-                <p className="mt-1 text-sm text-stone-600">
-                  1枚ずつ「印刷用PNG」でも保存できます。
-                  <span className="block sm:inline sm:before:content-['_·_']">
-                    まとめて使う場合はZIPを1回だけダウンロードしてください。
-                  </span>
-                </p>
               </div>
               <button
                 type="button"

@@ -620,18 +620,9 @@ function OrdersPageInner() {
               リアルタイムで注文状況を確認し、迅速に対応できます。
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-amber-100/95 bg-amber-50/80 px-3 py-1 text-xs font-medium text-amber-800">
-              自家製麺 多聞
-            </span>
-            <button
-              type="button"
-              onClick={() => refresh()}
-              className="rounded-xl border border-emerald-100/95 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
-            >
-              {loading ? "更新中…" : "更新"}
-            </button>
-          </div>
+          <span className="rounded-full border border-amber-100/95 bg-amber-50/80 px-3 py-1 text-xs font-medium text-amber-800">
+            自家製麺 多聞
+          </span>
         </header>
 
         {/* 表示日（1日分）— URL ?date= と同期 */}

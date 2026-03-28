@@ -1,12 +1,11 @@
 import type { MenuItem } from "@/lib/types";
 import { menuItems } from "@/lib/menu-data";
 
-/** 在庫スイッチ対象：麺ライン＋替玉（1 品目単位） */
+/** 在庫スイッチ対象：麺ラインのみ（替玉は在庫スイッチ対象外） */
 export const NOODLE_STOCK_CATEGORIES = [
   "tsukemen",
   "tamon_tsukemen",
   "ramen",
-  "kaedama",
 ] as const;
 
 export type NoodleStockCategoryId = (typeof NOODLE_STOCK_CATEGORIES)[number];
@@ -35,7 +34,6 @@ export const NOODLE_STOCK_SECTIONS: { category: NoodleStockCategoryId; labelJa: 
   { category: "tsukemen", labelJa: "つけ麺" },
   { category: "tamon_tsukemen", labelJa: "多聞つけ麺" },
   { category: "ramen", labelJa: "ラーメン" },
-  { category: "kaedama", labelJa: "替玉" },
 ];
 
 export function menuItemsInNoodleStockCategory(category: NoodleStockCategoryId): MenuItem[] {

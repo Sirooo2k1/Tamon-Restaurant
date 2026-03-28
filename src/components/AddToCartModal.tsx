@@ -199,11 +199,6 @@ export function AddToCartModal({ item, onClose, onAdded }: AddToCartModalProps) 
               <h2 className="mt-1 text-lg font-bold leading-tight tracking-tight text-gray-900 sm:text-xl">
                 {item.nameVi ?? item.name}
               </h2>
-              {item.description && (
-                <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-gray-500 sm:line-clamp-none sm:text-sm sm:leading-relaxed">
-                  {item.description}
-                </p>
-              )}
               <p className="mt-1.5 text-sm font-semibold leading-none text-amber-600 sm:mt-2 sm:text-base">
                 {yenLabel(unitPrice)}
                 <span className="ml-1 text-[11px] font-normal text-gray-400 sm:text-xs">/ item</span>
