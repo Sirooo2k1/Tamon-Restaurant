@@ -7,7 +7,7 @@ let loggedAnonFallback = false;
  * Client Supabase cho Route Handlers (server-only).
  * Ưu tiên **Service Role** (RLS bypass, ghi đơn an toàn). Không có → dùng **anon** (đủ cho policy mở như `menu_group_sold_out`).
  *
- * Lưu ý: Nếu production chỉ có anon, cần RLS/policy cho phép thao tác server cần thiết; menu 売り切れ đọc được với policy allow-all.
+ * Lưu ý: menu 売り切れ đọc bảng menu_availability (policy public read); ghi qua service role từ API bếp.
  */
 export function getSupabaseForOrdersOrNull(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

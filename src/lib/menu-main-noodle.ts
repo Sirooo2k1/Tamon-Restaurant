@@ -1,41 +1,43 @@
 import type { MenuItem } from "@/lib/types";
 import { menuItems } from "@/lib/menu-data";
 
-/** 売り切れはこの3ライン単位（全グラム共通） */
-export const MAIN_NOODLE_GROUP_DEF = [
-  { id: "tsukemen" as const, labelJa: "つけ麺" },
-  { id: "tamon_tsukemen" as const, labelJa: "多聞つけ麺" },
-  { id: "ramen" as const, labelJa: "ラーメン" },
+/** 在庫スイッチ対象：麺ライン＋替玉（1 品目単位） */
+export const NOODLE_STOCK_CATEGORIES = [
+  "tsukemen",
+  "tamon_tsukemen",
+  "ramen",
+  "kaedama",
 ] as const;
 
-export type MainNoodleGroupId = (typeof MAIN_NOODLE_GROUP_DEF)[number]["id"];
+export type NoodleStockCategoryId = (typeof NOODLE_STOCK_CATEGORIES)[number];
 
-const MAIN_NOODLE_CATEGORY_IDS = new Set<string>(
-  MAIN_NOODLE_GROUP_DEF.map((g) => g.id)
-);
+const NOODLE_STOCK_CATEGORY_SET = new Set<string>(NOODLE_STOCK_CATEGORIES);
 
-export function isMainNoodleGroupId(id: string): id is MainNoodleGroupId {
-  return MAIN_NOODLE_CATEGORY_IDS.has(id);
+export function isNoodleStockCategoryId(id: string): id is NoodleStockCategoryId {
+  return NOODLE_STOCK_CATEGORY_SET.has(id);
 }
 
-export function isMainNoodleMenuItem(item: Pick<MenuItem, "category">): boolean {
-  return MAIN_NOODLE_CATEGORY_IDS.has(item.category);
+export function isNoodleStockMenuItem(item: Pick<MenuItem, "category">): boolean {
+  return NOODLE_STOCK_CATEGORY_SET.has(item.category);
 }
 
-export function isMainNoodleMenuItemId(menuItemId: string): boolean {
+export function isNoodleStockMenuItemId(menuItemId: string): boolean {
   const m = menuItems.find((x) => x.id === menuItemId);
-  return m ? isMainNoodleMenuItem(m) : false;
+  return m ? isNoodleStockMenuItem(m) : false;
 }
 
-export function menuItemIdsInGroup(groupId: MainNoodleGroupId): string[] {
-  return menuItems.filter((m) => m.category === groupId).map((m) => m.id);
+export function menuItemsForNoodleStock(): MenuItem[] {
+  return menuItems.filter(isNoodleStockMenuItem);
 }
 
-/** Các nhóm đang 売り切れ → tập mọi menu_item_id khách không được đặt */
-export function expandSoldOutGroupsToMenuItemIds(groups: Set<MainNoodleGroupId>): Set<string> {
-  const ids = new Set<string>();
-  groups.forEach((g) => {
-    for (const id of menuItemIdsInGroup(g)) ids.add(id);
-  });
-  return ids;
+/** キッチン画面・見出し順 */
+export const NOODLE_STOCK_SECTIONS: { category: NoodleStockCategoryId; labelJa: string }[] = [
+  { category: "tsukemen", labelJa: "つけ麺" },
+  { category: "tamon_tsukemen", labelJa: "多聞つけ麺" },
+  { category: "ramen", labelJa: "ラーメン" },
+  { category: "kaedama", labelJa: "替玉" },
+];
+
+export function menuItemsInNoodleStockCategory(category: NoodleStockCategoryId): MenuItem[] {
+  return menuItems.filter((m) => m.category === category);
 }

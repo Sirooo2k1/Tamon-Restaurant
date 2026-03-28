@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from "react";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Sparkles } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { menuItems, categories } from "@/lib/menu-data";
 import type { MenuItem } from "@/lib/types";
@@ -46,16 +46,34 @@ function MenuItemRow({
   return (
     <div
       className={cn(
-        "flex gap-4 border-b border-gray-100/80 py-4 last:border-b-0",
-        soldOut && "opacity-75"
+        "relative flex gap-4 py-4 transition duration-300",
+        soldOut
+          ? "my-2 overflow-hidden rounded-2xl border border-rose-100/90 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 px-3 shadow-[0_16px_44px_-26px_rgba(190,18,60,0.2)] ring-1 ring-rose-100/40 sm:px-4"
+          : "border-b border-gray-100/80 last:border-b-0"
       )}
     >
+      {soldOut && (
+        <div
+          className="pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 rounded-full border border-rose-200/80 bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 shadow-md backdrop-blur-sm sm:right-4 sm:top-4"
+          aria-label="売り切れ"
+        >
+          <Sparkles className="h-3 w-3 text-rose-500" aria-hidden />
+          本日売切
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-semibold text-gray-800">{item.name}</h3>
+            <h3
+              className={cn(
+                "font-semibold tracking-tight",
+                soldOut ? "text-gray-500 line-through decoration-rose-300/80 decoration-2" : "text-gray-800"
+              )}
+            >
+              {item.name}
+            </h3>
             {soldOut && (
-              <span className="rounded-full border border-stone-300 bg-stone-100 px-2.5 py-0.5 text-[11px] font-bold text-stone-600">
+              <span className="hidden rounded-lg bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow sm:inline">
                 売り切れ
               </span>
             )}
@@ -70,46 +88,66 @@ function MenuItemRow({
               </span>
             )}
           </div>
-          <span className="shrink-0 font-semibold text-amber-600 sm:text-base">
+          <span
+            className={cn(
+              "shrink-0 font-semibold sm:text-base",
+              soldOut ? "text-gray-400 line-through" : "text-amber-600"
+            )}
+          >
             ¥{toYen(item.price)}
           </span>
         </div>
         {item.description && (
-          <p className="mt-1 text-xs text-gray-600 sm:text-sm">
+          <p
+            className={cn(
+              "mt-1 text-xs sm:text-sm",
+              soldOut ? "text-gray-400" : "text-gray-600"
+            )}
+          >
             {item.description}
           </p>
         )}
-        <button
-          type="button"
-          onClick={onAdd}
-          disabled={soldOut}
-          className={cn(
-            "mt-3 flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-medium transition",
-            soldOut
-              ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-          )}
-        >
-          <span className="text-base leading-none">+</span>
-          {soldOut ? "注文不可" : "Add to Cart"}
-        </button>
+        {soldOut ? (
+          <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50/80 px-3 py-2 text-[12px] font-medium text-rose-900/90">
+            申し訳ございません、本日はご注文いただけません。
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={onAdd}
+            className="mt-3 flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
+          >
+            <span className="text-base leading-none">+</span>
+            Add to Cart
+          </button>
+        )}
       </div>
       <div
         className={cn(
-          "h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-amber-200/80 bg-amber-100 sm:h-24 sm:w-24",
-          soldOut && "grayscale"
+          "relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border sm:h-24 sm:w-24",
+          soldOut
+            ? "border-rose-200/60 bg-slate-100"
+            : "border-amber-200/80 bg-amber-100"
         )}
       >
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
             alt=""
-            className="h-full w-full object-cover"
+            className={cn("h-full w-full object-cover", soldOut && "scale-105 blur-[2px] brightness-90")}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-amber-600/60">
+          <div
+            className={cn(
+              "flex h-full w-full items-center justify-center text-xs",
+              soldOut ? "text-rose-300/80" : "text-amber-600/60"
+            )}
+          >
             写真
           </div>
+        )}
+        {soldOut && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-t from-rose-950/25 to-transparent" />
         )}
       </div>
     </div>

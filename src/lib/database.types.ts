@@ -41,19 +41,19 @@ export interface Database {
           updated_at?: string;
         };
       };
-      menu_group_sold_out: {
+      menu_availability: {
         Row: {
-          group_id: string;
+          menu_item_id: string;
           sold_out: boolean;
           updated_at: string;
         };
         Insert: {
-          group_id: string;
+          menu_item_id: string;
           sold_out?: boolean;
           updated_at?: string;
         };
         Update: {
-          group_id?: string;
+          menu_item_id?: string;
           sold_out?: boolean;
           updated_at?: string;
         };
