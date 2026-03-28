@@ -189,28 +189,31 @@ export function OrderTrackingExperience({
   /** 403 + guest cookie 不一致 — 文言をやわらかく見せる */
   const [guestAccessHint, setGuestAccessHint] = useState(false);
   const [showItems, setShowItems] = useState(true);
-  const clearedTrackingAfterPaidRef = useRef(false);
+  /** 会計済みを一度読めた後に cookie 欠如で 403 になっても UI を消さない（poll / 画面離脱直前など） */
+  const paidSnapshotRef = useRef<{ id: string } | null>(null);
+  const orderRef = useRef(order);
+  orderRef.current = order;
   /** 一度でも API に成功したら ?k= は不要（cookie 済み） */
   const guestKeyConsumedRef = useRef(false);
 
   useEffect(() => {
-    clearedTrackingAfterPaidRef.current = false;
     guestKeyConsumedRef.current = false;
+    paidSnapshotRef.current = null;
     setOrder(undefined);
     setLoadError(null);
     setGuestAccessHint(false);
   }, [orderId]);
 
+  /** 会計済みのまま /order から離れたときだけトラック用 cookie を消す（画面表示中に消すと次の poll で 403 になりイメージ画面に化ける） */
   useEffect(() => {
-    if (order === undefined || order === null) return;
-    const paid =
-      order.status === "paid" ||
-      String(order.payment_status ?? "").toLowerCase() === "paid";
-    if (!paid) return;
-    if (clearedTrackingAfterPaidRef.current) return;
-    clearedTrackingAfterPaidRef.current = true;
-    void clearTrackedOrderOnServer();
-  }, [order]);
+    return () => {
+      const o = orderRef.current;
+      if (o === undefined || o === null) return;
+      const paid =
+        o.status === "paid" || String(o.payment_status ?? "").toLowerCase() === "paid";
+      if (paid) void clearTrackedOrderOnServer();
+    };
+  }, [orderId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -222,6 +225,11 @@ export function OrderTrackingExperience({
       const result = await fetchOrder(orderId, useKey ? guestKeyFromQuery : undefined);
       if (cancelled) return;
       if (!result.ok) {
+        const snapOk =
+          paidSnapshotRef.current?.id === orderId &&
+          result.httpStatus === 403 &&
+          result.code === "guest_access_required";
+        if (snapOk) return;
         setLoadError(result.message);
         setGuestAccessHint(
           result.httpStatus === 403 && result.code === "guest_access_required"
@@ -234,13 +242,24 @@ export function OrderTrackingExperience({
       setOrder(result.data);
       guestKeyConsumedRef.current = true;
       if (useKey) stripGuestKeyFromUrl();
+
+      const paid =
+        result.data.status === "paid" ||
+        String(result.data.payment_status ?? "").toLowerCase() === "paid";
+      if (paid) {
+        paidSnapshotRef.current = { id: orderId };
+        if (interval !== undefined) {
+          clearInterval(interval);
+          interval = undefined;
+        }
+      }
     };
 
-    load();
+    void load();
     interval = setInterval(load, POLL_MS);
     return () => {
       cancelled = true;
-      if (interval) clearInterval(interval);
+      if (interval !== undefined) clearInterval(interval);
     };
   }, [orderId, guestKeyFromQuery]);
 
