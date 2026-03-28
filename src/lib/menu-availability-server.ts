@@ -32,15 +32,25 @@ async function getSoldOutMenuItemIdSet(): Promise<Set<string>> {
     console.error(
       "[menu_availability] select failed:",
       error.message,
-      error.code ? `(code ${error.code})` : ""
+      error.code ? `(code ${error.code})` : "",
+      "| Kiểm tra RLS policy SELECT trên bảng (migration 003 / 007)."
     );
     return new Set();
   }
 
   const ids = new Set<string>();
+  const unknownFromDb: string[] = [];
   for (const row of data ?? []) {
     const id = String((row as { menu_item_id: string }).menu_item_id ?? "").trim();
-    if (id && ALLOWED_STOCK_MENU_IDS.has(id)) ids.add(id);
+    if (!id) continue;
+    if (ALLOWED_STOCK_MENU_IDS.has(id)) ids.add(id);
+    else unknownFromDb.push(id);
+  }
+  if (unknownFromDb.length > 0) {
+    console.warn(
+      "[menu_availability] sold_out=true nhưng menu_item_id không thuộc danh mục mì trong code — API sẽ bỏ qua. Kiểm tra khớp với menu-data:",
+      unknownFromDb.slice(0, 15)
+    );
   }
   return ids;
 }

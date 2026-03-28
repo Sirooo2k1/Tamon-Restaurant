@@ -235,6 +235,10 @@ function MenuContent() {
       try {
         const res = await fetch(`/api/menu/availability?t=${Date.now()}`, {
           cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
         });
         if (cancelled) return;
         if (!res.ok) {

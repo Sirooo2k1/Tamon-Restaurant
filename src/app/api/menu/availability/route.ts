@@ -5,6 +5,7 @@ import {
 } from "@/lib/menu-availability-server";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const noStore = {
   "Cache-Control": "private, no-store, max-age=0, must-revalidate",

@@ -3,6 +3,9 @@ import { getSupabase } from "@/lib/supabase";
 
 let loggedAnonFallback = false;
 
+const supabaseServerFetch: typeof fetch = (input, init) =>
+  fetch(input, { ...init, cache: "no-store" });
+
 /**
  * Client Supabase cho Route Handlers (server-only).
  * Ưu tiên **Service Role** (RLS bypass, ghi đơn an toàn). Không có → dùng **anon** (đủ cho policy mở như `menu_group_sold_out`).
@@ -20,6 +23,7 @@ export function getSupabaseForOrdersOrNull(): SupabaseClient | null {
   if (serviceKey) {
     return createClient(url.trim(), serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: supabaseServerFetch },
     });
   }
 
