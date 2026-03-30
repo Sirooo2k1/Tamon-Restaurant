@@ -13,6 +13,7 @@ export const menuItems: MenuItem[] = [
     category: "tsukemen",
     portionChoice: "150-200",
     price: Y(1000),
+    imageUrl: "/menu/tsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -26,7 +27,7 @@ export const menuItems: MenuItem[] = [
     description: "スープは同量です。替え玉できません。",
     category: "tsukemen",
     price: Y(1100),
-    highlight: "popular",
+    imageUrl: "/menu/tsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -40,6 +41,7 @@ export const menuItems: MenuItem[] = [
     description: "スープは同量です。替え玉できません。",
     category: "tsukemen",
     price: Y(1200),
+    imageUrl: "/menu/tsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -54,6 +56,7 @@ export const menuItems: MenuItem[] = [
       "スープは同量です。替え玉できません。おかわりや追加をご希望の場合は、メニューからお気軽に追加でご注文ください。",
     category: "tsukemen",
     price: Y(1300),
+    imageUrl: "/menu/tsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -69,6 +72,7 @@ export const menuItems: MenuItem[] = [
     category: "tsukemen",
     portionChoice: "500over-grams",
     price: Y(1300),
+    imageUrl: "/menu/tsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -84,6 +88,7 @@ export const menuItems: MenuItem[] = [
     category: "tamon_tsukemen",
     portionChoice: "150-200",
     price: Y(1100),
+    imageUrl: "/menu/tamontsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -98,6 +103,7 @@ export const menuItems: MenuItem[] = [
     category: "tamon_tsukemen",
     price: Y(1200),
     highlight: "signature",
+    imageUrl: "/menu/tamontsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -111,6 +117,7 @@ export const menuItems: MenuItem[] = [
     description: "スープは同量です。替え玉できません。",
     category: "tamon_tsukemen",
     price: Y(1300),
+    imageUrl: "/menu/tamontsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -125,6 +132,7 @@ export const menuItems: MenuItem[] = [
       "スープは同量です。替え玉できません。おかわりや追加をご希望の場合は、メニューからお気軽に追加でご注文ください。",
     category: "tamon_tsukemen",
     price: Y(1400),
+    imageUrl: "/menu/tamontsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -140,6 +148,7 @@ export const menuItems: MenuItem[] = [
     category: "tamon_tsukemen",
     portionChoice: "500over-grams",
     price: Y(1400),
+    imageUrl: "/menu/tamontsukemen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -153,6 +162,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Extra Soup",
     category: "extra",
     price: Y(400),
+    imageUrl: "/menu/sup.jpg",
     options: [],
   },
   // --- ラーメン --- (ảnh menu: 並950円 大1060円、替玉110円)
@@ -163,7 +173,7 @@ export const menuItems: MenuItem[] = [
     description: "1玉130g",
     category: "ramen",
     price: Y(950),
-    highlight: "recommended",
+    imageUrl: "/menu/ramennami.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -177,6 +187,7 @@ export const menuItems: MenuItem[] = [
     description: "2玉",
     category: "ramen",
     price: Y(1060),
+    imageUrl: "/menu/remendai.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -190,6 +201,7 @@ export const menuItems: MenuItem[] = [
     description: "1玉130g",
     category: "ramen",
     price: Y(950),
+    imageUrl: "/menu/shouyuramen.jpg",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -203,6 +215,7 @@ export const menuItems: MenuItem[] = [
     description: "2玉",
     category: "ramen",
     price: Y(1060),
+    imageUrl: "/menu/ramenshouyu.png",
     options: [
       { id: "ajitama", name: "味玉", nameVi: "Ajitama (Seasoned Egg)", price: Y(110), type: "topping" },
       { id: "menma", name: "メンマ", nameVi: "Menma (Bamboo Shoots)", price: Y(150), type: "topping" },
@@ -217,6 +230,7 @@ export const menuItems: MenuItem[] = [
     description: "ラーメンの麺は1玉130gです。",
     category: "kaedama",
     price: Y(110),
+    imageUrl: "/menu/AllMen.png",
     options: [],
   },
   // --- トッピング --- (ảnh menu: たまご110、メンマ150、チャーシュー(3枚)360、おつまみセット500)
@@ -226,6 +240,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Ajitama (Seasoned Egg)",
     category: "topping",
     price: Y(110),
+    imageUrl: "/menu/ajitama.png",
     options: [],
   },
   {
@@ -234,6 +249,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Menma (Bamboo Shoots)",
     category: "topping",
     price: Y(150),
+    imageUrl: "/menu/menmaa.jpg",
     options: [],
   },
   {
@@ -242,6 +258,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Chashu (3 slices)",
     category: "topping",
     price: Y(360),
+    imageUrl: "/menu/chashu.jpg",
     options: [],
   },
   {
@@ -251,6 +268,7 @@ export const menuItems: MenuItem[] = [
     description: "全部頼むならこちらがお得!",
     category: "topping",
     price: Y(500),
+    imageUrl: "/menu/snackset.jpg",
     options: [],
   },
   // --- ライス ---
@@ -260,6 +278,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Rice Small",
     category: "rice",
     price: Y(130),
+    imageUrl: "/menu/ricesmall.jpg",
     options: [],
   },
   {
@@ -268,6 +287,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Rice Medium",
     category: "rice",
     price: Y(200),
+    imageUrl: "/menu/ricesmedium.jpg",
     options: [],
   },
   {
@@ -276,6 +296,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Rice Large",
     category: "rice",
     price: Y(250),
+    imageUrl: "/menu/ricelarge.png",
     options: [],
   },
   // --- ぎょうざ (Gyoza) --- (ảnh menu: 6コ400、しそ5コ500、チーズ500)
@@ -285,6 +306,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Gyoza (6 pcs)",
     category: "gyoza",
     price: Y(400),
+    imageUrl: "/menu/Gyoza.jpg",
     options: [],
   },
   {
@@ -293,6 +315,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Shiso Gyoza (5 pcs)",
     category: "gyoza",
     price: Y(500),
+    imageUrl: "/menu/shiso-gyoza.webp",
     options: [],
   },
   {
@@ -301,6 +324,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Cheese Gyoza (5 pcs)",
     category: "gyoza",
     price: Y(500),
+    imageUrl: "/menu/cheese-gyoza.avif",
     options: [],
   },
   // --- ドリンク (Drinks) --- (ảnh menu: 瓶ビール600、ドライゼロ400、チューハイレモン400、ハイボールP400/L450、SUIジンソーダ400、ビアボール450、コーラ250、ウーロン茶250)
@@ -311,6 +335,7 @@ export const menuItems: MenuItem[] = [
     category: "drink",
     price: Y(600),
     beerVariantChoice: true,
+    imageUrl: "/menu/Bottled%20Beer.jpg",
     options: [],
   },
   {
@@ -319,6 +344,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Dry Zero (Non-alcoholic)",
     category: "drink",
     price: Y(400),
+    imageUrl: "/menu/Dry%20Zero.png",
     options: [],
   },
   {
@@ -327,6 +353,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Chuhai Lemon",
     category: "drink",
     price: Y(400),
+    imageUrl: "/menu/Chuhai%20Lemon.jpg",
     options: [],
   },
   {
@@ -336,6 +363,7 @@ export const menuItems: MenuItem[] = [
     category: "drink",
     price: Y(400),
     highballVariantChoice: true,
+    imageUrl: "/menu/Highball.webp",
     options: [],
   },
   {
@@ -344,6 +372,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "SUI Gin Soda",
     category: "drink",
     price: Y(400),
+    imageUrl: "/menu/SUI%20Gin%20Soda.jpg",
     options: [],
   },
   {
@@ -353,6 +382,7 @@ export const menuItems: MenuItem[] = [
     category: "drink",
     price: Y(450),
     beerBallVariantChoice: true,
+    imageUrl: "/menu/beer-ball.webp",
     options: [],
   },
   {
@@ -361,6 +391,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Cola",
     category: "drink",
     price: Y(250),
+    imageUrl: "/menu/Cola.jpg",
     options: [],
   },
   {
@@ -369,6 +400,7 @@ export const menuItems: MenuItem[] = [
     nameVi: "Oolong Tea (ICE only)",
     category: "drink",
     price: Y(250),
+    imageUrl: "/menu/Oolong%20Tea.jpeg",
     options: [],
   },
 ];

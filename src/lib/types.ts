@@ -9,8 +9,8 @@ export interface MenuOption {
   type: "topping" | "extra" | "size";
 }
 
-/** popular = ラインの人気柱 / signature = 看板・一番人気（多聞など） / recommended = 店長おすすめ */
-export type MenuItemHighlight = "popular" | "signature" | "recommended";
+/** signature = 看板・一番人気（多聞など） */
+export type MenuItemHighlight = "signature";
 
 export interface MenuItem {
   id: string;

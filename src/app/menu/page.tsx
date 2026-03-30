@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from "react";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2, Images, Sparkles } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { menuItems, categories } from "@/lib/menu-data";
 import type { MenuItem } from "@/lib/types";
@@ -84,16 +84,6 @@ function MenuItemRow({
               >
                 <Sparkles className="h-3 w-3 shrink-0 text-emerald-700" aria-hidden />
                 当店一番人気 · 多聞
-              </span>
-            )}
-            {item.highlight === "popular" && (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-              人気 No.1
-              </span>
-            )}
-            {item.highlight === "recommended" && (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
-                店長おすすめ
               </span>
             )}
           </div>
@@ -468,6 +458,37 @@ function MenuContent() {
               )}
             </div>
           )}
+
+          {/* 掲載写真について（イメージ表記） */}
+          <aside
+            className="mt-8 rounded-2xl border border-emerald-100/90 bg-gradient-to-br from-white via-emerald-50/40 to-amber-50/50 px-4 py-4 shadow-[0_8px_32px_-12px_rgba(16,185,129,0.18)] sm:px-5 sm:py-5"
+            role="note"
+            aria-label="メニュー写真に関するご案内"
+          >
+            <div className="flex gap-3.5 sm:gap-4">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-200/60 bg-emerald-50/90 shadow-inner sm:h-11 sm:w-11"
+                aria-hidden
+              >
+                <Images className="h-5 w-5 text-emerald-700/85 sm:h-[1.35rem] sm:w-[1.35rem]" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0 space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800/95">
+                  写真について
+                </p>
+                <p className="text-[12px] leading-relaxed text-gray-700 sm:text-[13px] sm:leading-relaxed">
+                  メニュー掲載の写真の一部は、お料理の盛り付けイメージとして掲載しております。
+                  <span className="mt-2 block">
+                    お客様にはご理解賜りますよう、何卒よろしくお願い申し上げます。
+                  </span>
+                </p>
+                <p className="border-t border-emerald-100/80 pt-2.5 text-[11px] leading-relaxed text-gray-500 sm:text-xs sm:leading-relaxed">
+                  <span className="font-medium text-gray-600">English:</span> Some photos on this menu are
+                  included to illustrate how dishes may be plated. We appreciate your understanding.
+                </p>
+              </div>
+            </div>
+          </aside>
           </div>
         </div>
       </div>
