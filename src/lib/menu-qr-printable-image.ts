@@ -20,6 +20,17 @@ const INSET_MM_Y = 4.5;
 const INSET_PX_X = Math.round(INSET_MM_X * PX_PER_MM);
 const INSET_PX_Y = Math.round(INSET_MM_Y * PX_PER_MM);
 
+/** 縦方向の幾何中央より「QR+卓名の塊ごと」下へずらす量（mm） */
+const BLOCK_SHIFT_DOWN_MM = 1.5;
+
+/**
+ * QR の直下〜卓名までの距離（mm）。ここを大きくすると卓名だけ下に離れる。
+ */
+const LABEL_GAP_BELOW_QR_MM = 10;
+
+/** 卓名の幅を QR の幅に合わせるときの内側余白（片側px） */
+const LABEL_TEXT_INSET_FROM_QR_PX = Math.round(0.45 * PX_PER_MM);
+
 function loadImage(dataUrl: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -68,21 +79,32 @@ export async function buildMenuQrPrintablePngDataUrl(
   const innerW = CANVAS_W - INSET_PX_X * 2;
   const innerH = CANVAS_H - INSET_PX_Y * 2;
 
-  const labelGap = Math.max(14, Math.round(1.8 * PX_PER_MM));
-  const fontMax = Math.min(50, Math.round(3.4 * PX_PER_MM));
-  const fontMin = Math.max(15, Math.round(1.1 * PX_PER_MM));
+  const labelGap = Math.max(22, Math.round(LABEL_GAP_BELOW_QR_MM * PX_PER_MM));
+  /** 卓名は「QR と同じ横幅」を上限にできるだけ大きく（長文は縮小） */
+  const fontMax = Math.min(64, Math.round(4.4 * PX_PER_MM));
+  const fontMin = Math.max(17, Math.round(1.15 * PX_PER_MM));
+  const vPad = Math.round(PX_PER_MM * 0.6);
+  const textPad = LABEL_TEXT_INSET_FROM_QR_PX * 2;
 
-  const labelMaxW = innerW - Math.round(1.2 * PX_PER_MM);
-  const fontSize = fitLabelFontSize(ctx, labelJa, labelMaxW, fontMax, fontMin);
-  const labelBlockH = Math.ceil(fontSize * 1.22);
-
-  const qrSize = Math.max(
+  /** QR サイズと卓名フォントを連立：卓名の maxWidth = QR 幅に揃える */
+  let qrSize = Math.max(
     120,
     Math.min(
       Math.floor(innerW * 0.86),
-      innerH - labelGap - labelBlockH - Math.round(PX_PER_MM * 0.6)
+      innerH - labelGap - Math.ceil(fontMin * 1.35) - vPad
     )
   );
+  let fontSize = fontMin;
+  let labelBlockH = Math.ceil(fontMin * 1.28);
+
+  for (let i = 0; i < 14; i++) {
+    const textMaxW = Math.max(40, qrSize - textPad);
+    fontSize = fitLabelFontSize(ctx, labelJa, textMaxW, fontMax, fontMin);
+    labelBlockH = Math.ceil(fontSize * 1.28);
+    const blockNeed = qrSize + labelGap + labelBlockH;
+    if (blockNeed <= innerH) break;
+    qrSize = Math.max(120, innerH - labelGap - labelBlockH - vPad);
+  }
 
   const qrOpts: QRCodeToDataURLOptions = {
     ...MENU_QR_TO_PNG_OPTIONS,
@@ -92,7 +114,11 @@ export async function buildMenuQrPrintablePngDataUrl(
   const qrImg = await loadImage(qrDataUrl);
 
   const blockH = qrSize + labelGap + labelBlockH;
-  const blockTop = INSET_PX_Y + Math.max(0, (innerH - blockH) / 2);
+  const innerTop = INSET_PX_Y;
+  const centeredTop = innerTop + Math.max(0, (innerH - blockH) / 2);
+  const shiftDownPx = Math.round(BLOCK_SHIFT_DOWN_MM * PX_PER_MM);
+  const maxBlockTop = innerTop + innerH - blockH;
+  const blockTop = Math.min(maxBlockTop, centeredTop + shiftDownPx);
   const qrX = (CANVAS_W - qrSize) / 2;
 
   ctx.fillStyle = "#ffffff";
