@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import QRCode from "qrcode";
 import { Download, Loader2, AlertCircle } from "lucide-react";
 import { buildMenuTableUrl } from "@/lib/qr-order-url";
-import { MENU_QR_TO_PNG_OPTIONS } from "@/lib/qr-render-options";
+import { buildMenuQrPrintablePngDataUrl } from "@/lib/menu-qr-printable-image";
 import type { QrTablePreset } from "@/lib/restaurant-qr-tables";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +12,7 @@ type Props = {
   baseUrl: string;
 };
 
-/** 印刷用 — 卓名・QR・PNG保存のみ */
+/** 印刷用 — QR の下に卓名を描いた 1 枚の PNG を表示・保存 */
 export function QrTableTile({ preset, baseUrl }: Props) {
   const targetUrl = buildMenuTableUrl(baseUrl, preset.code);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
@@ -29,7 +28,7 @@ export function QrTableTile({ preset, baseUrl }: Props) {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    QRCode.toDataURL(targetUrl, MENU_QR_TO_PNG_OPTIONS)
+    buildMenuQrPrintablePngDataUrl(targetUrl, preset.labelJa)
       .then((url) => {
         if (!cancelled) setDataUrl(url);
       })
@@ -42,7 +41,7 @@ export function QrTableTile({ preset, baseUrl }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [targetUrl]);
+  }, [targetUrl, preset.labelJa]);
 
   const downloadPng = useCallback(() => {
     if (!dataUrl) return;
@@ -61,11 +60,7 @@ export function QrTableTile({ preset, baseUrl }: Props) {
         "transition hover:border-amber-200/80 hover:shadow-md"
       )}
     >
-      <p className="mb-3 text-center text-sm font-semibold leading-tight text-stone-900 [font-feature-settings:'palt']">
-        {preset.labelJa}
-      </p>
-
-      <div className="flex min-h-[200px] flex-1 items-center justify-center rounded-xl bg-stone-50/80 ring-1 ring-stone-100">
+      <div className="flex min-h-[220px] flex-1 items-center justify-center rounded-xl bg-stone-50/80 px-2 py-3 ring-1 ring-stone-100">
         {loading && (
           <Loader2 className="h-8 w-8 animate-spin text-stone-400" aria-hidden />
         )}
@@ -77,7 +72,11 @@ export function QrTableTile({ preset, baseUrl }: Props) {
         )}
         {dataUrl && !loading && !error && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={dataUrl} alt={qrAlt} className="h-[180px] w-[180px] object-contain" />
+          <img
+            src={dataUrl}
+            alt={qrAlt}
+            className="max-h-[320px] w-full max-w-[min(100%,320px)] object-contain"
+          />
         )}
       </div>
 

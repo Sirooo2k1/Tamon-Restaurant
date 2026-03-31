@@ -1,8 +1,7 @@
-import QRCode from "qrcode";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { buildMenuTableUrl } from "@/lib/qr-order-url";
-import { MENU_QR_TO_PNG_OPTIONS } from "@/lib/qr-render-options";
+import { buildMenuQrPrintablePngDataUrl } from "@/lib/menu-qr-printable-image";
 import { RESTAURANT_QR_TABLES } from "@/lib/restaurant-qr-tables";
 
 function dataUrlToUint8Array(dataUrl: string): Uint8Array {
@@ -22,7 +21,7 @@ export async function downloadAllMenuQrPngsAsZip(baseUrl: string): Promise<void>
   for (const preset of RESTAURANT_QR_TABLES) {
     const targetUrl = buildMenuTableUrl(baseUrl, preset.code);
     if (!targetUrl) continue;
-    const dataUrl = await QRCode.toDataURL(targetUrl, MENU_QR_TO_PNG_OPTIONS);
+    const dataUrl = await buildMenuQrPrintablePngDataUrl(targetUrl, preset.labelJa);
     const bytes = dataUrlToUint8Array(dataUrl);
     const safeName = `menu-qr-${preset.code.replace(/[^\w.-]+/g, "_")}.png`;
     folder?.file(safeName, bytes);
