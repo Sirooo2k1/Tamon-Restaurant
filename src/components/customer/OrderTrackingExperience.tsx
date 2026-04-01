@@ -27,9 +27,25 @@ import { CUSTOMER_HERO_GRADIENT, customerHeroShellClassName } from "@/lib/custom
 import { clearTrackedOrderOnServer } from "@/lib/recent-order-tracking";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import { displayMenuItemNameJa } from "@/lib/menu-display";
-import { menuHrefForCustomerNavigation } from "@/lib/menu-table-session";
+import {
+  clearRememberedMenuTableCode,
+  menuHrefForCustomerNavigation,
+} from "@/lib/menu-table-session";
+import { useCartStore } from "@/store/cart-store";
 import { GuestAccessReceiptPreview } from "@/components/customer/GuestAccessReceiptPreview";
 import { CustomerPaymentReceipt } from "@/components/kitchen/CustomerPaymentReceipt";
+
+/**
+ * 会計完了後 — 卓・QR 記憶・カートをリセットする。
+ * CartDrawer は「追跡_cookie あり」または「カートに商品あり」でのみ表示するため、
+ * ここでカートを空にしないと注文送信後に追加した商品だけ残り、下部バーが出続けることがある。
+ */
+function clearGuestStateAfterOrderPaid(): void {
+  clearRememberedMenuTableCode();
+  const store = useCartStore.getState();
+  store.setTableLabel(null);
+  store.clearCart();
+}
 
 function stripGuestKeyFromUrl(): void {
   if (typeof window === "undefined") return;
@@ -110,7 +126,7 @@ const STEPS: {
 }[] = [
   { label: "受付・確認", short: "受付", Icon: Inbox },
   { label: "準備中", short: "準備", Icon: ChefHat },
-  { label: "提供準備", short: "準備", Icon: Bell },
+  { label: "提供準備", short: "提供待ち", Icon: Bell },
   { label: "お届け", short: "届済", Icon: Truck },
   { label: "会計完了", short: "完了", Icon: CheckCircle2 },
 ];
@@ -195,10 +211,12 @@ export function OrderTrackingExperience({
   orderRef.current = order;
   /** 一度でも API に成功したら ?k= は不要（cookie 済み） */
   const guestKeyConsumedRef = useRef(false);
+  const menuTableContextClearedForPaidRef = useRef(false);
 
   useEffect(() => {
     guestKeyConsumedRef.current = false;
     paidSnapshotRef.current = null;
+    menuTableContextClearedForPaidRef.current = false;
     setOrder(undefined);
     setLoadError(null);
     setGuestAccessHint(false);
@@ -211,7 +229,10 @@ export function OrderTrackingExperience({
       if (o === undefined || o === null) return;
       const paid =
         o.status === "paid" || String(o.payment_status ?? "").toLowerCase() === "paid";
-      if (paid) void clearTrackedOrderOnServer();
+      if (paid) {
+        void clearTrackedOrderOnServer();
+        clearGuestStateAfterOrderPaid();
+      }
     };
   }, [orderId]);
 
@@ -248,6 +269,10 @@ export function OrderTrackingExperience({
         String(result.data.payment_status ?? "").toLowerCase() === "paid";
       if (paid) {
         paidSnapshotRef.current = { id: orderId };
+        if (!menuTableContextClearedForPaidRef.current) {
+          menuTableContextClearedForPaidRef.current = true;
+          clearGuestStateAfterOrderPaid();
+        }
         if (interval !== undefined) {
           clearInterval(interval);
           interval = undefined;
@@ -658,17 +683,22 @@ export function OrderTrackingExperience({
       )}
 
       {showNav && (
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-          <Link
-            href={menuHrefForCustomerNavigation(order.table_label)}
-            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/80 py-3.5 text-sm font-bold text-emerald-950 shadow-[0_10px_28px_-18px_rgba(16,185,129,0.14)] transition hover:border-emerald-300 hover:shadow-[0_14px_32px_-16px_rgba(16,185,129,0.12)] active:scale-[0.99]"
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden />
-            追加で注文する
-          </Link>
+        <div className={cn("mt-8 flex flex-col gap-3", !isPaid && "sm:flex-row")}>
+          {!isPaid && (
+            <Link
+              href={menuHrefForCustomerNavigation(order.table_label)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/80 py-3.5 text-sm font-bold text-emerald-950 shadow-[0_10px_28px_-18px_rgba(16,185,129,0.14)] transition hover:border-emerald-300 hover:shadow-[0_14px_32px_-16px_rgba(16,185,129,0.12)] active:scale-[0.99]"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
+              追加で注文する
+            </Link>
+          )}
           <Link
             href="/"
-            className="flex flex-1 items-center justify-center rounded-2xl border border-gray-200/95 bg-white py-3.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-slate-50/90 active:scale-[0.99]"
+            className={cn(
+              "flex items-center justify-center rounded-2xl border border-gray-200/95 bg-white py-3.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-slate-50/90 active:scale-[0.99]",
+              !isPaid && "flex-1"
+            )}
           >
             ホームへ戻る
           </Link>

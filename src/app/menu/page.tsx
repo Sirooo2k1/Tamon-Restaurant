@@ -10,6 +10,7 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
 import { tableDisplayLabelFromQrCode } from "@/lib/table-display-label";
 import {
+  clearRememberedMenuTableCode,
   loadRememberedMenuTableCode,
   rememberMenuTableCodeFromQrParam,
   syncRememberedMenuTableFromDisplayLabel,
@@ -150,6 +151,7 @@ function MenuContent() {
   const [soldOutIds, setSoldOutIds] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const setTableLabel = useCartStore((s) => s.setTableLabel);
+  const clearCart = useCartStore((s) => s.clearCart);
   const tableLabel = useCartStore((s) => s.tableLabel);
 
   useEffect(() => {
@@ -187,7 +189,20 @@ function MenuContent() {
           });
           if (cancelled) return;
           if (ordRes.ok) {
-            const order = (await ordRes.json()) as { table_label?: string | null };
+            const order = (await ordRes.json()) as {
+              table_label?: string | null;
+              status?: string;
+              payment_status?: string | null;
+            };
+            const isPaidOrder =
+              order?.status === "paid" ||
+              String(order?.payment_status ?? "").toLowerCase() === "paid";
+            if (isPaidOrder) {
+              setTableLabel(null);
+              clearRememberedMenuTableCode();
+              clearCart();
+              return;
+            }
             const label = order?.table_label;
             if (typeof label === "string" && label.trim()) {
               const t = label.trim();
@@ -206,7 +221,7 @@ function MenuContent() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, setTableLabel]);
+  }, [searchParams, setTableLabel, clearCart]);
 
   useEffect(() => {
     if (!toast) return;
