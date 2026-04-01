@@ -364,6 +364,19 @@ export function OrderTrackingExperience({
     );
   }
 
+  /** 会計完了 — お客様用レシートのみ（上部カード・下部ナビなし） */
+  if (order && isPaid && !isCancelled) {
+    return (
+      <div className="mx-auto w-full max-w-lg px-4 py-6 sm:py-8">
+        <div className="overflow-hidden rounded-[1.35rem] border border-emerald-200/50 bg-white shadow-[0_24px_60px_-28px_rgba(6,95,70,0.18),0_0_0_1px_rgba(16,185,129,0.06)]">
+          <div className="p-4 sm:p-5">
+            <CustomerPaymentReceipt order={order} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loadError || !order) {
     const errText = loadError ?? "読み込みに失敗しました。";
     return (
@@ -474,15 +487,6 @@ export function OrderTrackingExperience({
           </div>
         )}
       </OrderTrackingCard>
-
-      {/* 会計完了後はキッチン「お客様用レシートを印刷」と同一コンポーネントで表示 */}
-      {!isCancelled && isPaid && (
-        <div className="mt-6 overflow-hidden rounded-[1.35rem] border border-emerald-200/50 bg-white shadow-[0_24px_60px_-28px_rgba(6,95,70,0.18),0_0_0_1px_rgba(16,185,129,0.06)]">
-          <div className="p-4 sm:p-5">
-            <CustomerPaymentReceipt order={order} />
-          </div>
-        </div>
-      )}
 
       {/* Stepper — same card surface as hero */}
       {!isCancelled && !isPaid && (

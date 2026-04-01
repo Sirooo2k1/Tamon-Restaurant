@@ -21,16 +21,17 @@ function OrderTrackContent() {
 
   return (
     <>
-      <div className="mx-auto max-w-lg px-4 pt-6 sm:pt-8">
-        <Link
-          href={replaceMenuNav ? "/menu" : menuHrefForCustomerNavigation(tableLabel)}
-          replace={replaceMenuNav}
-          className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          メニューに戻る
-        </Link>
-      </div>
+      {!replaceMenuNav && (
+        <div className="mx-auto max-w-lg px-4 pt-6 sm:pt-8">
+          <Link
+            href={menuHrefForCustomerNavigation(tableLabel)}
+            className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            メニューに戻る
+          </Link>
+        </div>
+      )}
       {orderId ? (
         <OrderTrackingExperience
           orderId={orderId}
