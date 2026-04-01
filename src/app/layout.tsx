@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { CustomerHistoryNavListener } from "@/components/CustomerHistoryNavListener";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -31,6 +32,7 @@ export default function RootLayout({
       className={cn("font-sans", dmSans.variable, playfair.variable)}
     >
       <body className="min-h-screen font-sans antialiased">
+        <CustomerHistoryNavListener />
         {children}
       </body>
     </html>

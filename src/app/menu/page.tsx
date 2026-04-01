@@ -15,7 +15,6 @@ import {
   clearRememberedMenuTableCode,
   isPostPaidBlockTableFromHistory,
   loadRememberedMenuTableCode,
-  markNavFromPopState,
   markPostPaidBlockTableFromHistory,
   peekNavFromPopState,
   rememberMenuTableCodeFromQrParam,
@@ -161,13 +160,29 @@ function MenuContent() {
   const clearCart = useCartStore((s) => s.clearCart);
   const tableLabel = useCartStore((s) => s.tableLabel);
 
+  /**
+   * BFCache でメニューが古い React 状態（卓・カート）のまま戻るケースを防ぐ。
+   * 会計済みフラグがあるときだけ全消し（通常の戻るは popstate+TTL で別途処理）。
+   */
   useEffect(() => {
-    const onPop = () => {
-      markNavFromPopState();
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      if (typeof window === "undefined" || window.location.pathname !== "/menu") return;
+      if (!isPostPaidBlockTableFromHistory()) return;
+      const { clearCart: clearC, setTableLabel: setT } = useCartStore.getState();
+      clearC();
+      setT(null);
+      clearRememberedMenuTableCode();
+      clearNavFromPopState();
+      clearPostPaidBlockTableFromHistory();
+      const table = new URLSearchParams(window.location.search).get("table");
+      if (table) {
+        router.replace("/menu");
+      }
     };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, [router]);
 
   useEffect(() => {
     const table = searchParams.get("table");
@@ -180,6 +195,7 @@ function MenuContent() {
         clearPostPaidBlockTableFromHistory();
         clearNavFromPopState();
         clearRememberedMenuTableCode();
+        clearCart();
         setTableLabel(null);
         router.replace("/menu");
         return;

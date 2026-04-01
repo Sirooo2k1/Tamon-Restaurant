@@ -8,8 +8,12 @@ const SESSION_KEY = "remenshop_menu_table_qr";
 /** 会計後、履歴の「戻る」で `?table=` 付きメニューに戻ったとき卓を復活させない */
 const SESSION_POST_PAID_BLOCK_TABLE = "remenshop_post_paid_block_table";
 
-/** ブラウザの戻る/進む（popstate）直後のみ立つ */
-const SESSION_NAV_FROM_POP = "remenshop_nav_from_popstate";
+/**
+ * popstate のタイムスタンプ（ms）。二値フラグだと「戻った直後に別ページへ push した」とき誤検知するため TTL で失効させる。
+ */
+const SESSION_NAV_FROM_POP = "remenshop_nav_from_popstate_ts";
+
+const DEFAULT_NAV_FROM_POP_MAX_AGE_MS = 1400;
 
 export function markPostPaidBlockTableFromHistory(): void {
   try {
@@ -37,15 +41,31 @@ export function clearPostPaidBlockTableFromHistory(): void {
 
 export function markNavFromPopState(): void {
   try {
-    sessionStorage.setItem(SESSION_NAV_FROM_POP, "1");
+    sessionStorage.setItem(SESSION_NAV_FROM_POP, String(Date.now()));
   } catch {
     /* noop */
   }
 }
 
-export function peekNavFromPopState(): boolean {
+/**
+ * 直近の popstate が TTL 内なら履歴由来の遷移とみなす。期限切れならキーを消して false。
+ */
+export function peekNavFromPopState(
+  maxAgeMs: number = DEFAULT_NAV_FROM_POP_MAX_AGE_MS
+): boolean {
   try {
-    return sessionStorage.getItem(SESSION_NAV_FROM_POP) === "1";
+    const raw = sessionStorage.getItem(SESSION_NAV_FROM_POP);
+    if (!raw) return false;
+    const ts = Number(raw);
+    if (!Number.isFinite(ts)) {
+      sessionStorage.removeItem(SESSION_NAV_FROM_POP);
+      return false;
+    }
+    if (Date.now() - ts > maxAgeMs) {
+      sessionStorage.removeItem(SESSION_NAV_FROM_POP);
+      return false;
+    }
+    return true;
   } catch {
     return false;
   }
