@@ -5,8 +5,12 @@ import {
 
 const SESSION_KEY = "remenshop_menu_table_qr";
 
-/** 会計後、履歴の「戻る」で `?table=` 付きメニューに戻ったとき卓を復活させない */
+/**
+ * 会計後セッション — 履歴の戻るで checkout/order/?table= に戻さない。
+ * タイムスタンプを保持し、strip では消さない（一定時間で自然失効）。
+ */
 const SESSION_POST_PAID_BLOCK_TABLE = "remenshop_post_paid_block_table";
+const POST_PAY_BLOCK_MAX_MS = 24 * 60 * 60 * 1000;
 
 /**
  * popstate のタイムスタンプ（ms）。二値フラグだと「戻った直後に別ページへ push した」とき誤検知するため TTL で失効させる。
@@ -51,7 +55,7 @@ export function shouldTreatOrderPageAsStaleAfterCheckout(orderId: string): boole
 
 export function markPostPaidBlockTableFromHistory(): void {
   try {
-    sessionStorage.setItem(SESSION_POST_PAID_BLOCK_TABLE, "1");
+    sessionStorage.setItem(SESSION_POST_PAID_BLOCK_TABLE, String(Date.now()));
   } catch {
     /* noop */
   }
@@ -59,12 +63,23 @@ export function markPostPaidBlockTableFromHistory(): void {
 
 export function isPostPaidBlockTableFromHistory(): boolean {
   try {
-    return sessionStorage.getItem(SESSION_POST_PAID_BLOCK_TABLE) === "1";
+    const raw = sessionStorage.getItem(SESSION_POST_PAID_BLOCK_TABLE);
+    if (!raw) return false;
+    const ts = Number(raw);
+    if (Number.isFinite(ts)) {
+      if (Date.now() - ts > POST_PAY_BLOCK_MAX_MS) {
+        sessionStorage.removeItem(SESSION_POST_PAID_BLOCK_TABLE);
+        return false;
+      }
+      return true;
+    }
+    return raw === "1";
   } catch {
     return false;
   }
 }
 
+/** 通常は呼ばない（会計後ブロックは時間で失効）。デバッグや明示リセット用 */
 export function clearPostPaidBlockTableFromHistory(): void {
   try {
     sessionStorage.removeItem(SESSION_POST_PAID_BLOCK_TABLE);
@@ -166,10 +181,13 @@ export function menuHrefPreservingTable(tableLabel: string | null | undefined): 
   return `/menu?table=${encodeURIComponent(code)}`;
 }
 
-/** メニューへ戻る: 表示中の卓 → なければ同タブで記憶した QR の `?table=` */
+/** メニューへ戻る: 表示中の卓 → なければ同タブで記憶した QR の `?table=`（会計直後ブロック中は常に `/menu`） */
 export function menuHrefForCustomerNavigation(
   tableLabel: string | null | undefined
 ): string {
+  if (typeof window !== "undefined" && isPostPaidBlockTableFromHistory()) {
+    return "/menu";
+  }
   const href = menuHrefPreservingTable(tableLabel);
   if (href !== "/menu") return href;
   const code = loadRememberedMenuTableCode();

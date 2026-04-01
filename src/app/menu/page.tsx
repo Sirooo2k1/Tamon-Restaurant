@@ -11,7 +11,6 @@ import { useCartStore } from "@/store/cart-store";
 import { tableDisplayLabelFromQrCode } from "@/lib/table-display-label";
 import {
   clearNavFromPopState,
-  clearPostPaidBlockTableFromHistory,
   clearRememberedMenuTableCode,
   isPostPaidBlockTableFromHistory,
   loadRememberedMenuTableCode,
@@ -174,7 +173,6 @@ function MenuContent() {
       setT(null);
       clearRememberedMenuTableCode();
       clearNavFromPopState();
-      clearPostPaidBlockTableFromHistory();
       const table = new URLSearchParams(window.location.search).get("table");
       if (table) {
         router.replace("/menu");
@@ -195,7 +193,6 @@ function MenuContent() {
        * （peekNav だけに頼るとチェックアウトで clear されたり TTL で外れ、卓が URL から蘇る）
        */
       if (isPostPaidBlockTableFromHistory()) {
-        clearPostPaidBlockTableFromHistory();
         clearNavFromPopState();
         clearRememberedMenuTableCode();
         clearCart();
@@ -217,6 +214,11 @@ function MenuContent() {
      */
     let cancelled = false;
     (async () => {
+      if (isPostPaidBlockTableFromHistory()) {
+        setTableLabel(null);
+        clearRememberedMenuTableCode();
+        return;
+      }
       const applyRemembered = () => {
         const code = loadRememberedMenuTableCode();
         if (code) {

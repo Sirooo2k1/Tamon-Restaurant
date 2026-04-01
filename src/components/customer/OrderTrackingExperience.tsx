@@ -21,6 +21,8 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
+  ClipboardList,
+  Coffee,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CUSTOMER_HERO_GRADIENT, customerHeroShellClassName } from "@/lib/customer-hero-gradient";
@@ -138,6 +140,104 @@ const STEPS: {
 
 const POLL_MS = 3000;
 
+/** チェックアウト直後のみ表示。会計済みになると親が paid 分岐で本ブロックを出さない */
+function PostCheckoutThankYouCard({ orderWasMerged }: { orderWasMerged?: boolean }) {
+  return (
+    <section className="relative mb-5 w-full sm:mb-6">
+      <div
+        className="pointer-events-none absolute left-1/2 top-0 h-40 w-[min(100%,28rem)] -translate-x-1/2 rounded-full bg-emerald-200/25 blur-3xl"
+        aria-hidden
+      />
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-emerald-100/90 bg-white/85 shadow-[0_20px_50px_-12px_rgba(6,95,70,0.12)] ring-1 ring-emerald-900/[0.04] backdrop-blur-md">
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-200/30 to-transparent"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -bottom-16 -left-16 h-36 w-36 rounded-full bg-gradient-to-tr from-amber-100/40 to-transparent"
+          aria-hidden
+        />
+        <div className="relative px-4 pb-5 pt-5 sm:px-6 sm:pb-6 sm:pt-6">
+          <div className="flex flex-col items-center">
+            <div className="relative">
+              <span
+                className="absolute inset-[-4px] rounded-xl bg-emerald-300/10 blur-md"
+                aria-hidden
+              />
+              <div className="relative flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-xl bg-gradient-to-br from-emerald-50 via-white to-teal-50/80 shadow-inner ring-2 ring-emerald-100/90 sm:h-14 sm:w-14">
+                <CheckCircle2 className="h-7 w-7 text-emerald-400 sm:h-8 sm:w-8" strokeWidth={1.65} />
+              </div>
+            </div>
+            <p className="mt-1 text-[10px] font-bold tracking-[0.16em] text-emerald-700/80">
+              ご注文を承りました
+            </p>
+          </div>
+
+          <h2 className="mx-auto mt-3 max-w-[26rem] text-center text-[1.05rem] font-bold leading-snug tracking-tight text-gray-900 sm:text-xl sm:leading-snug">
+            {orderWasMerged ? (
+              <>
+                ご注文に追加いたしました。
+                <br />
+                ありがとうございます。
+              </>
+            ) : (
+              <>
+                この度はご注文を賜り、
+                <br />
+                誠にありがとうございます。
+              </>
+            )}
+          </h2>
+          {orderWasMerged && (
+            <p className="mx-auto mt-2 max-w-[24rem] text-center text-xs text-emerald-800/90">
+              既存の注文にカートの内容を加えました。合計は追跡画面でご確認ください。
+            </p>
+          )}
+          <div
+            className="mx-auto mt-2.5 h-px w-14 bg-gradient-to-r from-transparent via-emerald-300/80 to-transparent"
+            aria-hidden
+          />
+
+          <ul className="mt-4 space-y-1.5 sm:mt-4 sm:space-y-2">
+            <li className="flex gap-2.5 rounded-xl border border-emerald-100/60 bg-gradient-to-r from-emerald-50/50 to-white/60 px-3 py-2.5 sm:gap-3 sm:rounded-2xl sm:py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-emerald-100/80 sm:h-10 sm:w-10 sm:rounded-xl">
+                <ChefHat className="h-4 w-4 text-emerald-600 sm:h-[1.125rem] sm:w-[1.125rem]" strokeWidth={2} />
+              </span>
+              <p className="min-w-0 text-[0.8125rem] leading-snug text-gray-700 sm:text-sm sm:leading-snug">
+                ただいま料理人が一品一品、心を尽くしてご用意を進めております。
+              </p>
+            </li>
+            <li className="flex gap-2.5 rounded-xl border border-emerald-100/60 bg-gradient-to-r from-emerald-50/50 to-white/60 px-3 py-2.5 sm:gap-3 sm:rounded-2xl sm:py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-emerald-100/80 sm:h-10 sm:w-10 sm:rounded-xl">
+                <ClipboardList className="h-4 w-4 text-emerald-600 sm:h-[1.125rem] sm:w-[1.125rem]" strokeWidth={2} />
+              </span>
+              <p className="min-w-0 text-[0.8125rem] leading-snug text-gray-700 sm:text-sm sm:leading-snug">
+                ご注文の進行状況につきましては、本画面にて随時ご確認いただけます。
+              </p>
+            </li>
+            <li className="flex gap-2.5 rounded-xl border border-emerald-100/60 bg-gradient-to-r from-emerald-50/50 to-white/60 px-3 py-2.5 sm:gap-3 sm:rounded-2xl sm:py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-emerald-100/80 sm:h-10 sm:w-10 sm:rounded-xl">
+                <Sparkles className="h-4 w-4 text-emerald-600 sm:h-[1.125rem] sm:w-[1.125rem]" strokeWidth={2} />
+              </span>
+              <p className="min-w-0 text-[0.8125rem] leading-snug text-gray-700 sm:text-sm sm:leading-snug">
+                お料理が最良の状態でお手元に届きますよう、丁寧に仕上げてまいります。
+              </p>
+            </li>
+            <li className="flex gap-2.5 rounded-xl border border-amber-100/70 bg-gradient-to-r from-amber-50/40 to-white/60 px-3 py-2.5 sm:gap-3 sm:rounded-2xl sm:py-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm ring-1 ring-amber-100/90 sm:h-10 sm:w-10 sm:rounded-xl">
+                <Coffee className="h-4 w-4 text-amber-700 sm:h-[1.125rem] sm:w-[1.125rem]" strokeWidth={2} />
+              </span>
+              <p className="min-w-0 text-[0.8125rem] leading-snug text-gray-700 sm:text-sm sm:leading-snug">
+                どうぞ、ひとときの時間もごゆっくりお楽しみくださいませ。
+              </p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function OrderTrackingCard({
   children,
   className,
@@ -202,6 +302,10 @@ type Props = {
    * 会計済み or 会計済み相当のヒント画面のとき、上位の「メニューに戻る」を `replace` + `/menu` に揃える。
    */
   onReplaceMenuNavigation?: (replaceMenu: boolean) => void;
+  /** チェックアウト完了直後 — 会計前のみ「ご注文を承りました」カードを上に出す */
+  postCheckoutThankYou?: boolean;
+  /** API `merged` — 追加持ちの案内文言 */
+  orderWasMerged?: boolean;
 };
 
 export function OrderTrackingExperience({
@@ -209,6 +313,8 @@ export function OrderTrackingExperience({
   showNav = true,
   guestKeyFromQuery = null,
   onReplaceMenuNavigation,
+  postCheckoutThankYou = false,
+  orderWasMerged = false,
 }: Props) {
   const [order, setOrder] = useState<OrderRecord | null | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -357,9 +463,14 @@ export function OrderTrackingExperience({
 
   if (order === undefined && !loadError) {
     return (
-      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 px-4">
-        <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
-        <p className="text-sm font-medium text-gray-600">お客様のご注文を読み込み中…</p>
+      <div className="mx-auto w-full max-w-lg px-4 py-6 sm:py-8">
+        {postCheckoutThankYou && (
+          <PostCheckoutThankYouCard orderWasMerged={orderWasMerged} />
+        )}
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
+          <p className="text-sm font-medium text-gray-600">お客様のご注文を読み込み中…</p>
+        </div>
       </div>
     );
   }
@@ -413,6 +524,7 @@ export function OrderTrackingExperience({
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-6 sm:py-8">
+      {postCheckoutThankYou && <PostCheckoutThankYouCard orderWasMerged={orderWasMerged} />}
       {/* Hero — layered depth, refined JP typography */}
       <OrderTrackingCard innerClassName="px-5 pb-5 pt-6 sm:px-6 sm:pt-7">
         {(isCancelled || !isPaid) && (
