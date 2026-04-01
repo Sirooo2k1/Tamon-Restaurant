@@ -31,6 +31,8 @@ import {
   clearRememberedMenuTableCode,
   markPostPaidBlockTableFromHistory,
   menuHrefForCustomerNavigation,
+  rememberOrderClosedAfterPayment,
+  shouldTreatOrderPageAsStaleAfterCheckout,
 } from "@/lib/menu-table-session";
 import { useCartStore } from "@/store/cart-store";
 import { GuestAccessReceiptPreview } from "@/components/customer/GuestAccessReceiptPreview";
@@ -41,9 +43,10 @@ import { CustomerPaymentReceipt } from "@/components/kitchen/CustomerPaymentRece
  * CartDrawer は「追跡_cookie あり」または「カートに商品あり」でのみ表示するため、
  * ここでカートを空にしないと注文送信後に追加した商品だけ残り、下部バーが出続けることがある。
  */
-function clearGuestStateAfterOrderPaid(): void {
+function clearGuestStateAfterOrderPaid(closedOrderId: string): void {
   clearRememberedMenuTableCode();
   markPostPaidBlockTableFromHistory();
+  rememberOrderClosedAfterPayment(closedOrderId);
   const store = useCartStore.getState();
   store.setTableLabel(null);
   store.clearCart();
@@ -238,7 +241,7 @@ export function OrderTrackingExperience({
         o.status === "paid" || String(o.payment_status ?? "").toLowerCase() === "paid";
       if (paid) {
         void clearTrackedOrderOnServer();
-        clearGuestStateAfterOrderPaid();
+        clearGuestStateAfterOrderPaid(o.id);
       }
     };
   }, [orderId]);
@@ -258,10 +261,16 @@ export function OrderTrackingExperience({
           result.httpStatus === 403 &&
           result.code === "guest_access_required";
         if (snapOk) return;
+        const guest403 =
+          result.httpStatus === 403 && result.code === "guest_access_required";
+        if (guest403 && shouldTreatOrderPageAsStaleAfterCheckout(orderId)) {
+          if (typeof window !== "undefined") {
+            window.location.replace("/");
+          }
+          return;
+        }
         setLoadError(result.message);
-        setGuestAccessHint(
-          result.httpStatus === 403 && result.code === "guest_access_required"
-        );
+        setGuestAccessHint(guest403);
         setOrder(null);
         return;
       }
@@ -278,7 +287,7 @@ export function OrderTrackingExperience({
         paidSnapshotRef.current = { id: orderId };
         if (!menuTableContextClearedForPaidRef.current) {
           menuTableContextClearedForPaidRef.current = true;
-          clearGuestStateAfterOrderPaid();
+          clearGuestStateAfterOrderPaid(orderId);
         }
         if (interval !== undefined) {
           clearInterval(interval);

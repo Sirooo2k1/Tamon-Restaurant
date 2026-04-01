@@ -32,7 +32,10 @@ import {
 } from "@/lib/recent-order-tracking";
 import { CartDrawer } from "@/components/CartDrawer";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
-import { menuHrefForCustomerNavigation } from "@/lib/menu-table-session";
+import {
+  clearNavFromPopState,
+  menuHrefForCustomerNavigation,
+} from "@/lib/menu-table-session";
 
 const toYen = (vnd: number) => Math.round(vnd / 200);
 
@@ -120,6 +123,10 @@ export default function CheckoutPage() {
   const [mergeEligible, setMergeEligible] = useState(false);
 
   const subtotal = getSubtotal();
+
+  useEffect(() => {
+    clearNavFromPopState();
+  }, []);
 
   // Chỉ kiểm tra vị trí khi đã có table (từ QR) và đã bật cấu hình store
   useEffect(() => {

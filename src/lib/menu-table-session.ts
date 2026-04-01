@@ -15,6 +15,40 @@ const SESSION_NAV_FROM_POP = "remenshop_nav_from_popstate_ts";
 
 const DEFAULT_NAV_FROM_POP_MAX_AGE_MS = 1400;
 
+/** 会計後は「戻る」が遅くても卓を復活させないよう、ブロック中だけ popstate の有効時間を延長する */
+const NAV_FROM_POP_MAX_AGE_WHEN_POST_PAID_MS = 10 * 60 * 1000;
+
+const ORDERS_CLOSED_AFTER_CHECKOUT_KEY = "remenshop_orders_closed_after_payment";
+
+export function rememberOrderClosedAfterPayment(orderId: string): void {
+  const id = orderId.trim();
+  if (!id) return;
+  try {
+    const raw = sessionStorage.getItem(ORDERS_CLOSED_AFTER_CHECKOUT_KEY);
+    const ids: unknown = raw ? JSON.parse(raw) : [];
+    const list = Array.isArray(ids) ? (ids as string[]) : [];
+    if (list.includes(id)) return;
+    list.push(id);
+    while (list.length > 32) list.shift();
+    sessionStorage.setItem(ORDERS_CLOSED_AFTER_CHECKOUT_KEY, JSON.stringify(list));
+  } catch {
+    /* noop */
+  }
+}
+
+/** 会計済みセッションを終えた注文 ID — 履歴の「戻る」で 403 領収イメージを出さずホームへ */
+export function shouldTreatOrderPageAsStaleAfterCheckout(orderId: string): boolean {
+  const id = orderId.trim();
+  if (!id) return false;
+  try {
+    const raw = sessionStorage.getItem(ORDERS_CLOSED_AFTER_CHECKOUT_KEY);
+    const ids: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(ids) && (ids as string[]).includes(id);
+  } catch {
+    return false;
+  }
+}
+
 export function markPostPaidBlockTableFromHistory(): void {
   try {
     sessionStorage.setItem(SESSION_POST_PAID_BLOCK_TABLE, "1");
@@ -49,10 +83,14 @@ export function markNavFromPopState(): void {
 
 /**
  * 直近の popstate が TTL 内なら履歴由来の遷移とみなす。期限切れならキーを消して false。
+ * `maxAgeMs` 省略時: 会計直後ブロック中はウィンドウを長めに取る（遅い「戻る」でも卓を復活させない）。
  */
-export function peekNavFromPopState(
-  maxAgeMs: number = DEFAULT_NAV_FROM_POP_MAX_AGE_MS
-): boolean {
+export function peekNavFromPopState(maxAgeMs?: number): boolean {
+  const limit =
+    maxAgeMs ??
+    (isPostPaidBlockTableFromHistory()
+      ? NAV_FROM_POP_MAX_AGE_WHEN_POST_PAID_MS
+      : DEFAULT_NAV_FROM_POP_MAX_AGE_MS);
   try {
     const raw = sessionStorage.getItem(SESSION_NAV_FROM_POP);
     if (!raw) return false;
@@ -61,7 +99,7 @@ export function peekNavFromPopState(
       sessionStorage.removeItem(SESSION_NAV_FROM_POP);
       return false;
     }
-    if (Date.now() - ts > maxAgeMs) {
+    if (Date.now() - ts > limit) {
       sessionStorage.removeItem(SESSION_NAV_FROM_POP);
       return false;
     }
