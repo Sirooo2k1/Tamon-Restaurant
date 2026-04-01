@@ -5,6 +5,60 @@ import {
 
 const SESSION_KEY = "remenshop_menu_table_qr";
 
+/** 会計後、履歴の「戻る」で `?table=` 付きメニューに戻ったとき卓を復活させない */
+const SESSION_POST_PAID_BLOCK_TABLE = "remenshop_post_paid_block_table";
+
+/** ブラウザの戻る/進む（popstate）直後のみ立つ */
+const SESSION_NAV_FROM_POP = "remenshop_nav_from_popstate";
+
+export function markPostPaidBlockTableFromHistory(): void {
+  try {
+    sessionStorage.setItem(SESSION_POST_PAID_BLOCK_TABLE, "1");
+  } catch {
+    /* noop */
+  }
+}
+
+export function isPostPaidBlockTableFromHistory(): boolean {
+  try {
+    return sessionStorage.getItem(SESSION_POST_PAID_BLOCK_TABLE) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function clearPostPaidBlockTableFromHistory(): void {
+  try {
+    sessionStorage.removeItem(SESSION_POST_PAID_BLOCK_TABLE);
+  } catch {
+    /* noop */
+  }
+}
+
+export function markNavFromPopState(): void {
+  try {
+    sessionStorage.setItem(SESSION_NAV_FROM_POP, "1");
+  } catch {
+    /* noop */
+  }
+}
+
+export function peekNavFromPopState(): boolean {
+  try {
+    return sessionStorage.getItem(SESSION_NAV_FROM_POP) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function clearNavFromPopState(): void {
+  try {
+    sessionStorage.removeItem(SESSION_NAV_FROM_POP);
+  } catch {
+    /* noop */
+  }
+}
+
 /** QR の `?table=` を同一タブ内で覚え、メニューに戻ったとき卓表示が消えないようにする */
 export function rememberMenuTableCodeFromQrParam(code: string): void {
   const c = code.trim();

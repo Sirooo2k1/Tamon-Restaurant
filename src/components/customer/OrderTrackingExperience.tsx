@@ -29,6 +29,7 @@ import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import { displayMenuItemNameJa } from "@/lib/menu-display";
 import {
   clearRememberedMenuTableCode,
+  markPostPaidBlockTableFromHistory,
   menuHrefForCustomerNavigation,
 } from "@/lib/menu-table-session";
 import { useCartStore } from "@/store/cart-store";
@@ -42,6 +43,7 @@ import { CustomerPaymentReceipt } from "@/components/kitchen/CustomerPaymentRece
  */
 function clearGuestStateAfterOrderPaid(): void {
   clearRememberedMenuTableCode();
+  markPostPaidBlockTableFromHistory();
   const store = useCartStore.getState();
   store.setTableLabel(null);
   store.clearCart();
@@ -193,12 +195,17 @@ type Props = {
    * 初回読み込み時のみ付与し、成功後は URL から外す（下記）。
    */
   guestKeyFromQuery?: string | null;
+  /**
+   * 会計済み or 会計済み相当のヒント画面のとき、上位の「メニューに戻る」を `replace` + `/menu` に揃える。
+   */
+  onReplaceMenuNavigation?: (replaceMenu: boolean) => void;
 };
 
 export function OrderTrackingExperience({
   orderId,
   showNav = true,
   guestKeyFromQuery = null,
+  onReplaceMenuNavigation,
 }: Props) {
   const [order, setOrder] = useState<OrderRecord | null | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -294,6 +301,19 @@ export function OrderTrackingExperience({
     order?.status === "paid" ||
     String(order?.payment_status ?? "").toLowerCase() === "paid";
 
+  useEffect(() => {
+    if (order === undefined) {
+      onReplaceMenuNavigation?.(false);
+      return;
+    }
+    const replaceMenu =
+      guestAccessHint ||
+      (order !== null &&
+        (order.status === "paid" ||
+          String(order.payment_status ?? "").toLowerCase() === "paid"));
+    onReplaceMenuNavigation?.(replaceMenu);
+  }, [order, guestAccessHint, onReplaceMenuNavigation]);
+
   const copy = order ? STATUS_COPY[order.status] : null;
 
   const itemLines = useMemo(() => {
@@ -357,7 +377,8 @@ export function OrderTrackingExperience({
         {showNav && (
           <div className="mt-6 text-center">
             <Link
-              href={menuHrefForCustomerNavigation(null)}
+              href="/menu"
+              replace
               className="inline-flex rounded-2xl border border-emerald-100/90 bg-emerald-50/90 px-6 py-3 text-sm font-semibold text-emerald-900 shadow-sm ring-1 ring-emerald-50/85 transition hover:bg-emerald-100/95"
             >
               メニューへ
@@ -695,6 +716,7 @@ export function OrderTrackingExperience({
           )}
           <Link
             href="/"
+            replace={isPaid}
             className={cn(
               "flex items-center justify-center rounded-2xl border border-gray-200/95 bg-white py-3.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:bg-slate-50/90 active:scale-[0.99]",
               !isPaid && "flex-1"

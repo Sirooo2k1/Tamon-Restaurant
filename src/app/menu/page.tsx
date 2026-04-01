@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from "react";
 import { CheckCircle2, Images, Sparkles } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { menuItems, categories } from "@/lib/menu-data";
 import type { MenuItem } from "@/lib/types";
 import { AddToCartModal } from "@/components/AddToCartModal";
@@ -10,8 +10,14 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
 import { tableDisplayLabelFromQrCode } from "@/lib/table-display-label";
 import {
+  clearNavFromPopState,
+  clearPostPaidBlockTableFromHistory,
   clearRememberedMenuTableCode,
+  isPostPaidBlockTableFromHistory,
   loadRememberedMenuTableCode,
+  markNavFromPopState,
+  markPostPaidBlockTableFromHistory,
+  peekNavFromPopState,
   rememberMenuTableCodeFromQrParam,
   syncRememberedMenuTableFromDisplayLabel,
 } from "@/lib/menu-table-session";
@@ -150,13 +156,40 @@ function MenuContent() {
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
   const [soldOutIds, setSoldOutIds] = useState<string[]>([]);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const setTableLabel = useCartStore((s) => s.setTableLabel);
   const clearCart = useCartStore((s) => s.clearCart);
   const tableLabel = useCartStore((s) => s.tableLabel);
 
   useEffect(() => {
+    const onPop = () => {
+      markNavFromPopState();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
     const table = searchParams.get("table");
+    if (!table && peekNavFromPopState()) {
+      clearNavFromPopState();
+    }
     if (table) {
+      const fromPop = peekNavFromPopState();
+      if (isPostPaidBlockTableFromHistory() && fromPop) {
+        clearPostPaidBlockTableFromHistory();
+        clearNavFromPopState();
+        clearRememberedMenuTableCode();
+        setTableLabel(null);
+        router.replace("/menu");
+        return;
+      }
+      if (isPostPaidBlockTableFromHistory()) {
+        clearPostPaidBlockTableFromHistory();
+      }
+      if (fromPop) {
+        clearNavFromPopState();
+      }
       rememberMenuTableCodeFromQrParam(table);
       setTableLabel(tableDisplayLabelFromQrCode(table));
       return;
@@ -200,6 +233,7 @@ function MenuContent() {
             if (isPaidOrder) {
               setTableLabel(null);
               clearRememberedMenuTableCode();
+              markPostPaidBlockTableFromHistory();
               clearCart();
               return;
             }
@@ -221,7 +255,7 @@ function MenuContent() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, setTableLabel, clearCart]);
+  }, [searchParams, router, setTableLabel, clearCart]);
 
   useEffect(() => {
     if (!toast) return;

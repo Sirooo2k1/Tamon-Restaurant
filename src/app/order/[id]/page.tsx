@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -12,6 +12,7 @@ import { menuHrefForCustomerNavigation } from "@/lib/menu-table-session";
 function OrderTrackContent() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const [replaceMenuNav, setReplaceMenuNav] = useState(false);
   const tableLabel = useCartStore((s) => s.tableLabel);
   const raw = params?.id;
   const orderId =
@@ -22,7 +23,8 @@ function OrderTrackContent() {
     <>
       <div className="mx-auto max-w-lg px-4 pt-6 sm:pt-8">
         <Link
-          href={menuHrefForCustomerNavigation(tableLabel)}
+          href={replaceMenuNav ? "/menu" : menuHrefForCustomerNavigation(tableLabel)}
+          replace={replaceMenuNav}
           className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -34,6 +36,7 @@ function OrderTrackContent() {
           orderId={orderId}
           showNav
           guestKeyFromQuery={guestKey}
+          onReplaceMenuNavigation={setReplaceMenuNav}
         />
       ) : (
         <div className="px-4 py-20 text-center text-sm text-gray-600">
