@@ -190,8 +190,11 @@ function MenuContent() {
       clearNavFromPopState();
     }
     if (table) {
-      const fromPop = peekNavFromPopState();
-      if (isPostPaidBlockTableFromHistory() && fromPop) {
+      /**
+       * 会計直後ブロック中は `?table=` を履歴の「戻る」でも client 遷移でも常に無効化する。
+       * （peekNav だけに頼るとチェックアウトで clear されたり TTL で外れ、卓が URL から蘇る）
+       */
+      if (isPostPaidBlockTableFromHistory()) {
         clearPostPaidBlockTableFromHistory();
         clearNavFromPopState();
         clearRememberedMenuTableCode();
@@ -200,10 +203,7 @@ function MenuContent() {
         router.replace("/menu");
         return;
       }
-      if (isPostPaidBlockTableFromHistory()) {
-        clearPostPaidBlockTableFromHistory();
-      }
-      if (fromPop) {
+      if (peekNavFromPopState()) {
         clearNavFromPopState();
       }
       rememberMenuTableCodeFromQrParam(table);

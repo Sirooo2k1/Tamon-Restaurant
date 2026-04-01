@@ -402,25 +402,34 @@ export function OrderTrackingExperience({
     <div className="mx-auto w-full max-w-lg px-4 py-6 sm:py-8">
       {/* Hero — layered depth, refined JP typography */}
       <OrderTrackingCard innerClassName="px-5 pb-5 pt-6 sm:px-6 sm:pt-7">
-        <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-white/85 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-800 shadow-[0_1px_2px_rgba(6,95,70,0.06)] backdrop-blur-sm">
-            <Sparkles className="h-3.5 w-3.5 text-amber-500" aria-hidden />
-            ご注文の状況
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100/90 bg-emerald-50/60 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-emerald-800/90">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/40" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_2px_rgba(209,250,229,0.85)]" />
-            </span>
-            自動更新
-          </span>
-        </div>
+        {(isCancelled || !isPaid) && (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-white/85 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-800 shadow-[0_1px_2px_rgba(6,95,70,0.06)] backdrop-blur-sm">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" aria-hidden />
+                ご注文の状況
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100/90 bg-emerald-50/60 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-emerald-800/90">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/40" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_2px_rgba(209,250,229,0.85)]" />
+                </span>
+                自動更新
+              </span>
+            </div>
 
-        <h1 className="mt-5 text-2xl font-bold leading-snug tracking-tight text-gray-900 sm:text-[1.7rem]">
-          {isCancelled ? "ご案内" : isPaid ? "ご来店ありがとうございました" : "ご注文の準備状況"}
-        </h1>
+            <h1 className="mt-5 text-2xl font-bold leading-snug tracking-tight text-gray-900 sm:text-[1.7rem]">
+              {isCancelled ? "ご案内" : "ご注文の準備状況"}
+            </h1>
+          </>
+        )}
 
-        <div className="mt-5 flex flex-wrap items-end gap-4 rounded-2xl border border-white/60 bg-white/40 px-3.5 py-3 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset] backdrop-blur-[6px] sm:px-4">
+        <div
+          className={cn(
+            "flex flex-wrap items-end gap-4 rounded-2xl border border-white/60 bg-white/40 px-3.5 py-3 shadow-[0_1px_0_rgba(255,255,255,0.6)_inset] backdrop-blur-[6px] sm:px-4",
+            isPaid && !isCancelled ? "mt-0" : "mt-5"
+          )}
+        >
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">
               注文番号
@@ -440,7 +449,7 @@ export function OrderTrackingExperience({
           </div>
         </div>
 
-        {!isCancelled && copy && (
+        {!isCancelled && !isPaid && copy && (
           <div className="mt-5 rounded-2xl border border-emerald-100/70 bg-white/75 px-4 py-3.5 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_8px_20px_-12px_rgba(16,185,129,0.09)]">
             <p className="text-sm font-bold tracking-tight text-emerald-950">{copy.headline}</p>
             <p className="mt-1.5 text-[13px] leading-relaxed text-gray-600">{copy.detail}</p>
