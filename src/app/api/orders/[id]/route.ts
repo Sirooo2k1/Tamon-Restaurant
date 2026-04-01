@@ -1,19 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assertKitchenStaff } from "@/lib/kitchen-session";
-import { sanitizeOrderRow } from "@/lib/order-public";
-import { getSupabaseForOrdersOrNull } from "@/lib/supabase-api";
-import type { OrderItemPayload } from "@/lib/types";
 import {
   markAllOrderLinesDelivered,
   markNoodleOrderLinesDeliveredOnly,
   shouldAutoMarkAllLinesDelivered,
 } from "@/lib/order-auto-fulfillment";
 import { getDevOrderById, updateDevOrder } from "@/lib/dev-orders";
+import { sanitizeOrderRow } from "@/lib/order-public";
+import { getSupabaseForOrdersOrNull } from "@/lib/supabase-api";
 import {
   TRACKED_ORDER_COOKIE,
   TRACKED_ORDER_SECRET_COOKIE,
   setGuestOrderCookies,
 } from "@/lib/tracked-order-session";
+import type { OrderItemPayload, OrderStatus } from "@/lib/types";
+
+const RESTORABLE_PRE_CANCEL = new Set<OrderStatus>([
+  "pending",
+  "confirmed",
+  "preparing",
+  "ready",
+  "served",
+]);
+
+function restoreStatusFromPreCancel(raw: unknown): OrderStatus {
+  if (typeof raw === "string" && RESTORABLE_PRE_CANCEL.has(raw as OrderStatus)) {
+    return raw as OrderStatus;
+  }
+  return "pending";
+}
 
 const NO_STORE = { "Cache-Control": "private, no-store, max-age=0" } as const;
 
@@ -106,6 +121,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     status?: string;
     payment_status?: string;
     items?: OrderItemPayload[];
+    undo_cancel?: boolean;
   };
 
   const db = getSupabaseForOrdersOrNull();
@@ -116,6 +132,33 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!row) return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
 
     const rec = row as Record<string, unknown>;
+    const currentStatus = String(rec.status ?? "");
+
+    if (body.undo_cancel) {
+      if (currentStatus !== "cancelled") {
+        return NextResponse.json({ error: "キャンセル済みの注文だけ取り消せます。" }, { status: 400 });
+      }
+      const restore = restoreStatusFromPreCancel(rec.pre_cancel_status);
+      const { data, error } = await db
+        .from("orders")
+        .update({ status: restore, pre_cancel_status: null })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(sanitizeOrderRow(data as Record<string, unknown>), { headers: NO_STORE });
+    }
+
+    if (currentStatus === "cancelled") {
+      return NextResponse.json(
+        {
+          error:
+            "キャンセル済みの注文は「キャンセルを取り消す」操作でのみ更新できます。一覧から該当注文で利用してください。",
+        },
+        { status: 409 }
+      );
+    }
+
     const currentItems: OrderItemPayload[] = Array.isArray(rec.items)
       ? (rec.items as OrderItemPayload[])
       : [];
@@ -138,8 +181,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       nextItems = body.items;
     }
 
-    const update: { status?: string; payment_status?: string; items?: unknown } = {};
-    if (body.status != null) update.status = body.status;
+    const update: {
+      status?: string;
+      payment_status?: string;
+      items?: unknown;
+      pre_cancel_status?: string | null;
+    } = {};
+
+    if (body.status === "cancelled") {
+      if (currentStatus === "paid") {
+        return NextResponse.json({ error: "会計済みの注文はキャンセルできません。" }, { status: 400 });
+      }
+      update.pre_cancel_status = currentStatus;
+      update.status = "cancelled";
+    } else if (body.status != null) {
+      update.status = body.status;
+    }
+
     if (body.payment_status != null) update.payment_status = body.payment_status;
     if (nextItems !== undefined) update.items = nextItems;
 
@@ -154,8 +212,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json(sanitizeOrderRow(data as Record<string, unknown>), { headers: NO_STORE });
   }
 
+  const devPeek = getDevOrderById(id);
+  if (!devPeek) return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
+  if (devPeek.status === "cancelled" && !body.undo_cancel) {
+    return NextResponse.json(
+      {
+        error:
+          "キャンセル済みの注文は「キャンセルを取り消す」操作でのみ更新できます。一覧から該当注文で利用してください。",
+      },
+      { status: 409 }
+    );
+  }
+
   const updated = updateDevOrder(id, body);
-  if (!updated) return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
+  if (!updated) {
+    if (body.undo_cancel) {
+      return NextResponse.json({ error: "キャンセル済みの注文だけ取り消せます。" }, { status: 400 });
+    }
+    return NextResponse.json({ error: "注文が見つかりません" }, { status: 404 });
+  }
   return NextResponse.json(sanitizeOrderRow(updated as unknown as Record<string, unknown>), {
     headers: NO_STORE,
   });

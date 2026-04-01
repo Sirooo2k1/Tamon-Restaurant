@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Undo2,
 } from "lucide-react";
 import { CustomerPaymentReceipt } from "@/components/kitchen/CustomerPaymentReceipt";
 import { KitchenDesktopAside, KitchenMobileNav } from "@/components/kitchen/KitchenNav";
@@ -236,7 +237,12 @@ function filterByTab(order: OrderRecord, tab: FilterTab): boolean {
 
 async function patchOrder(
   id: string,
-  body: { status?: OrderStatus; payment_status?: string; items?: OrderItemPayload[] }
+  body: {
+    status?: OrderStatus;
+    payment_status?: string;
+    items?: OrderItemPayload[];
+    undo_cancel?: boolean;
+  }
 ): Promise<OrderRecord | null> {
   const res = await fetch(`/api/orders/${id}`, {
     method: "PATCH",
@@ -570,6 +576,25 @@ function OrdersPageInner() {
         if (updated) {
           refresh();
           showToast("注文をキャンセルしました");
+        }
+      } finally {
+        setPatchingId(null);
+      }
+    },
+    [refresh, showToast]
+  );
+
+  const handleUndoCancel = useCallback(
+    async (orderId: string) => {
+      if (!confirm("キャンセルを取り消し、直前の進行状況に戻しますか？")) return;
+      setPatchingId(orderId);
+      try {
+        const updated = await patchOrder(orderId, { undo_cancel: true });
+        if (updated) {
+          refresh();
+          showToast("キャンセルを取り消しました");
+        } else {
+          showToast("更新に失敗しました");
         }
       } finally {
         setPatchingId(null);
@@ -976,7 +1001,36 @@ function OrdersPageInner() {
                             </button>
                           </>
                         ) : (
-                          <p className="text-center text-[11px] text-gray-500">キャンセル済み</p>
+                          <div className="space-y-2">
+                            <p className="text-center text-[11px] text-gray-500">キャンセル済み</p>
+                            <button
+                              type="button"
+                              disabled={isPatching}
+                              onClick={() => handleUndoCancel(order.id)}
+                              className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-3 py-2.5 text-sm font-semibold text-emerald-900 shadow-sm ring-1 ring-emerald-50/85 transition hover:bg-emerald-100/90 disabled:opacity-60"
+                            >
+                              {isPatching ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Undo2 className="h-4 w-4" />
+                              )}
+                              キャンセルを取り消す
+                            </button>
+                            <p className="text-center text-[10px] leading-relaxed text-gray-500">
+                              {order.pre_cancel_status &&
+                              order.pre_cancel_status in STATUS_CONFIG &&
+                              order.pre_cancel_status !== "cancelled" ? (
+                                <>
+                                  <span className="font-medium text-gray-600">
+                                    {STATUS_CONFIG[order.pre_cancel_status].labelJa}
+                                  </span>
+                                  に戻します
+                                </>
+                              ) : (
+                                <>記録がない場合は「{STATUS_CONFIG.pending.labelJa}」に戻します</>
+                              )}
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}

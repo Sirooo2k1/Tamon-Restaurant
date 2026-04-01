@@ -11,6 +11,7 @@ export interface Database {
           items: Json;
           total_amount: number;
           status: string;
+          pre_cancel_status: string | null;
           customer_note: string | null;
           payment_status: string;
           created_at: string;
@@ -23,6 +24,7 @@ export interface Database {
           items: Json;
           total_amount: number;
           status?: string;
+          pre_cancel_status?: string | null;
           customer_note?: string | null;
           payment_status?: string;
           created_at?: string;
@@ -35,6 +37,7 @@ export interface Database {
           items?: Json;
           total_amount?: number;
           status?: string;
+          pre_cancel_status?: string | null;
           customer_note?: string | null;
           payment_status?: string;
           created_at?: string;

@@ -101,6 +101,8 @@ export interface OrderRecord {
   items: OrderItemPayload[];
   total_amount: number;
   status: OrderStatus;
+  /** Trạng thái trước khi cancelled — có khi undo キャンセル */
+  pre_cancel_status?: OrderStatus | null;
   customer_note: string | null;
   payment_status: string;
   created_at: string;
