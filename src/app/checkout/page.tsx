@@ -98,9 +98,11 @@ function formatCustomization(customization: LineItemCustomization): string | nul
 type LocationStatus = null | "checking" | "inside" | "outside" | "denied" | "error";
 /**
  * Production: khách phải vào menu qua QR (`/menu?table=...`) để có số bàn.
- * Dev / test không QR: tạo `.env.local` với NEXT_PUBLIC_ALLOW_ORDER_WITHOUT_TABLE=true
+ * Dev / test không QR: `.env.local` + NEXT_PUBLIC_ALLOW_ORDER_WITHOUT_TABLE=true
+ * (Production luôn tắt dù env bị set nhầm.)
  */
 const ALLOW_ORDER_WITHOUT_TABLE =
+  process.env.NODE_ENV !== "production" &&
   process.env.NEXT_PUBLIC_ALLOW_ORDER_WITHOUT_TABLE === "true";
 
 export default function CheckoutPage() {

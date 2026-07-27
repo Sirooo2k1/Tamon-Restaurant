@@ -14,6 +14,13 @@ import {
   tableLabelsMatch,
 } from "@/lib/order-merge";
 import { findSoldOutInPayload, soldOutLabelJa } from "@/lib/menu-availability-server";
+import {
+  checkOrderCreateAllowed,
+  getClientIpFromRequest,
+  recordOrderCreate,
+} from "@/lib/order-create-rate-limit";
+import { priceOrderLinesFromMenu } from "@/lib/order-pricing-server";
+import { canonicalTableCodeFromLabel } from "@/lib/restaurant-qr-tables";
 import { getSupabaseForOrdersOrNull } from "@/lib/supabase-api";
 import {
   TRACKED_ORDER_COOKIE,
@@ -21,6 +28,17 @@ import {
   clearGuestOrderCookies,
   setGuestOrderCookies,
 } from "@/lib/tracked-order-session";
+
+function requireKnownTableLabel(table_label: string | undefined): string | null {
+  const label = String(table_label ?? "").trim();
+  if (!label) {
+    return "卓番が必要です。お席のQRコードからメニューを開いてください。";
+  }
+  if (!canonicalTableCodeFromLabel(label)) {
+    return "卓番が正しくありません。お席のQRコードから再度お試しください。";
+  }
+  return null;
+}
 
 /** Danh sách đơn — chỉ nhân viên đã đăng nhập bếp (production luôn bật) */
 export async function GET(request: NextRequest) {
@@ -42,6 +60,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIpFromRequest(request);
+  const limited = checkOrderCreateAllowed(ip);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "注文が多すぎます。しばらくしてから再度お試しください。" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSec) },
+      }
+    );
+  }
+
   const body = (await request.json()) as {
     table_id?: string;
     table_label?: string;
@@ -51,15 +81,23 @@ export async function POST(request: NextRequest) {
     merge_into_current_order?: boolean;
   };
 
-  const { table_id, table_label, items, total_amount, customer_note, merge_into_current_order } = body;
-  if (!items?.length || typeof total_amount !== "number") {
-    return NextResponse.json(
-      { error: "items または total_amount が必要です" },
-      { status: 400 }
-    );
+  const { table_id, table_label, items, customer_note, merge_into_current_order } = body;
+  if (!items?.length) {
+    return NextResponse.json({ error: "items が必要です" }, { status: 400 });
   }
 
-  const soldOutIds = await findSoldOutInPayload(items);
+  const tableErr = requireKnownTableLabel(table_label);
+  if (tableErr) {
+    return NextResponse.json({ error: tableErr }, { status: 400 });
+  }
+
+  const priced = priceOrderLinesFromMenu(items);
+  if (!priced.ok) {
+    return NextResponse.json({ error: priced.error }, { status: 400 });
+  }
+  const { items: pricedItems, total_amount } = priced;
+
+  const soldOutIds = await findSoldOutInPayload(pricedItems);
   if (soldOutIds.length) {
     return NextResponse.json(
       {
@@ -134,11 +172,11 @@ export async function POST(request: NextRequest) {
       const existingItems: OrderItemPayload[] = Array.isArray(rec.items)
         ? (rec.items as OrderItemPayload[])
         : [];
-      const appended = normalizeAppendedOrderLines(items);
+      const appended = normalizeAppendedOrderLines(pricedItems);
       const mergedItems = mergeOrderItems(existingItems, appended);
       const prevTotal = Number(rec.total_amount ?? 0);
       const nextTotal = prevTotal + total_amount;
-      const bumpedStatus = orderStatusAfterMergeAppend(String(rec.status ?? ""), items);
+      const bumpedStatus = orderStatusAfterMergeAppend(String(rec.status ?? ""), pricedItems);
       const { data: updated, error: updateErr } = await dbMerge
         .from("orders")
         .update({
@@ -152,6 +190,7 @@ export async function POST(request: NextRequest) {
       if (updateErr) {
         return NextResponse.json({ error: updateErr.message }, { status: 500 });
       }
+      recordOrderCreate(ip);
       const res = NextResponse.json({
         ...sanitizeOrderRow(updated as Record<string, unknown>),
         merged: true,
@@ -192,8 +231,7 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-    /** quyền đã kiểm tra qua verifyGuestOrderToken */
-    const updated = appendDevOrderLines(trackedId, items, total_amount);
+    const updated = appendDevOrderLines(trackedId, pricedItems, total_amount);
     if (!updated) {
       const res404 = NextResponse.json(
         { error: "元の注文が見つかりません。新規注文として送信してください。" },
@@ -202,6 +240,7 @@ export async function POST(request: NextRequest) {
       clearGuestOrderCookies(res404);
       return res404;
     }
+    recordOrderCreate(ip);
     const res = NextResponse.json({
       ...sanitizeOrderRow(updated as unknown as Record<string, unknown>),
       merged: true,
@@ -214,7 +253,7 @@ export async function POST(request: NextRequest) {
   const payload = {
     table_id: table_id ?? null,
     table_label: table_label ?? null,
-    items,
+    items: pricedItems,
     total_amount,
     status: "pending" as const,
     customer_note: customer_note ?? null,
@@ -230,6 +269,7 @@ export async function POST(request: NextRequest) {
       .select("id, created_at, updated_at, guest_view_token")
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    recordOrderCreate(ip);
     const fullRow = { ...payload, id: data.id, created_at: data.created_at, updated_at: data.updated_at };
     const res = NextResponse.json(sanitizeOrderRow(fullRow as Record<string, unknown>));
     setGuestOrderCookies(res, data.id, guestViewToken);
@@ -245,6 +285,7 @@ export async function POST(request: NextRequest) {
     updated_at: now,
   } as DevOrderRecord;
   addDevOrder(record);
+  recordOrderCreate(ip);
   const res = NextResponse.json(sanitizeOrderRow(record as unknown as Record<string, unknown>));
   setGuestOrderCookies(res, id, guestViewToken);
   return res;

@@ -20,9 +20,10 @@ function contentSecurityPolicy(): string | null {
     "object-src 'none'",
     "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://*.supabase.co",
     "font-src 'self'",
-    "connect-src 'self'",
+    // Kitchen realtime / API → Supabase
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
     "upgrade-insecure-requests",
   ].join("; ");
 }

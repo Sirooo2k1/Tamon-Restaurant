@@ -8,9 +8,8 @@ const supabaseServerFetch: typeof fetch = (input, init) =>
 
 /**
  * Client Supabase cho Route Handlers (server-only).
- * Ưu tiên **Service Role** (RLS bypass, ghi đơn an toàn). Không có → dùng **anon** (đủ cho policy mở như `menu_group_sold_out`).
- *
- * Lưu ý: menu 売り切れ đọc bảng menu_availability (policy public read); ghi qua service role từ API bếp.
+ * Production: **bắt buộc Service Role** (orders RLS đã khóa anon).
+ * Dev: không có service role → fallback anon (chỉ khi DB còn policy mở / local).
  */
 export function getSupabaseForOrdersOrNull(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,12 +26,14 @@ export function getSupabaseForOrdersOrNull(): SupabaseClient | null {
     });
   }
 
-  if (process.env.NODE_ENV === "production" && !loggedAnonFallback) {
-    loggedAnonFallback = true;
-    console.warn(
-      "[supabase-api] SUPABASE_SERVICE_ROLE_KEY not set — using anon for server routes. " +
-        "Menu/orders need NEXT_PUBLIC_SUPABASE_ANON_KEY; add service role for stricter server writes."
-    );
+  if (process.env.NODE_ENV === "production") {
+    if (!loggedAnonFallback) {
+      loggedAnonFallback = true;
+      console.error(
+        "[supabase-api] SUPABASE_SERVICE_ROLE_KEY is required in production (orders RLS denies anon)."
+      );
+    }
+    return null;
   }
 
   try {
