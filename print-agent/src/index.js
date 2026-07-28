@@ -30,43 +30,53 @@ function itemCount(order) {
   return Array.isArray(order?.items) ? order.items.length : 0;
 }
 
-async function handleOrder(order, { forceNew = false } = {}) {
-  if (!order?.id) return;
-  if (String(order.status ?? "").toLowerCase() === "cancelled") {
-    seen.set(order.id, {
-      itemCount: itemCount(order),
-      updated_at: String(order.updated_at ?? ""),
-    });
-    return;
-  }
-
-  const prev = seen.get(order.id);
-  const count = itemCount(order);
-
-  if (!prev || forceNew) {
-    await printKitchenTicket(order, { mode: "new" }, env);
-    seen.set(order.id, {
-      itemCount: count,
-      updated_at: String(order.updated_at ?? ""),
-    });
-    return;
-  }
-
-  if (count > prev.itemCount) {
-    const appended = (order.items ?? []).slice(prev.itemCount);
-    await printKitchenTicket(order, { mode: "append", items: appended }, env);
-    seen.set(order.id, {
-      itemCount: count,
-      updated_at: String(order.updated_at ?? ""),
-    });
-    return;
-  }
-
-  // Status-only updates: remember but do not reprint
+function remember(order, count) {
   seen.set(order.id, {
     itemCount: count,
     updated_at: String(order.updated_at ?? ""),
   });
+}
+
+/**
+ * In phiếu bếp. Claim `seen` TRƯỚC khi await print —
+ * tránh realtime + poll in trùng 2 tờ cho cùng một đơn.
+ */
+async function handleOrder(order, { forceNew = false } = {}) {
+  if (!order?.id) return;
+  if (String(order.status ?? "").toLowerCase() === "cancelled") {
+    remember(order, itemCount(order));
+    return;
+  }
+
+  const count = itemCount(order);
+  let prev = seen.get(order.id);
+
+  // Đã được path khác claim rồi → không in lại như đơn mới
+  if (prev && forceNew) {
+    forceNew = false;
+  }
+
+  if (!prev || forceNew) {
+    remember(order, count); // claim trước khi in
+    await printKitchenTicket(order, { mode: "new" }, env);
+    return;
+  }
+
+  if (count > prev.itemCount) {
+    const allItems = order.items ?? [];
+    const previousItems = allItems.slice(0, prev.itemCount);
+    const appended = allItems.slice(prev.itemCount);
+    remember(order, count); // claim trước khi in追加
+    await printKitchenTicket(
+      order,
+      { mode: "append", previousItems, items: appended },
+      env
+    );
+    return;
+  }
+
+  // Status-only / trùng: cập nhật meta, không in
+  remember(order, count);
 }
 
 async function bootstrap() {
@@ -96,10 +106,7 @@ async function bootstrap() {
         console.error("[bootstrap] print failed:", err.message || err);
       }
     } else {
-      seen.set(order.id, {
-        itemCount: itemCount(order),
-        updated_at: String(order.updated_at ?? ""),
-      });
+      remember(order, itemCount(order));
     }
   }
 
@@ -173,10 +180,7 @@ async function pollLoop() {
         console.error("[poll] append print failed:", err.message || err);
       }
     } else if (String(order.updated_at ?? "") !== prev.updated_at) {
-      seen.set(order.id, {
-        itemCount: itemCount(order),
-        updated_at: String(order.updated_at ?? ""),
-      });
+      remember(order, itemCount(order));
     }
   }
 }

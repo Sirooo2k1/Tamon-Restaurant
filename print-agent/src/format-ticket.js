@@ -97,15 +97,18 @@ function leftRight(left, right, cols = COLS) {
  *
  *   #31CF8DA9          席
  *   受付:26/7/28 1:05  カウンター2番
+ *
+ * mode append →「追加」cạnh #id (vd. #31CF8DA9 追加)
  */
-function metaIdSeatLines(code, tableLabel, receivedAt) {
+function metaIdSeatLines(code, tableLabel, receivedAt, { append = false } = {}) {
   const seat = "席";
   const tableStr = fit(tableLabel, 18);
   const blockW = Math.max(displayWidth(seat), displayWidth(tableStr));
   const blockStart = COLS - blockW;
   const leftMax = Math.max(1, blockStart - 1);
 
-  const id = fit(`#${code}`, leftMax);
+  const idLabel = append ? `#${code} 追加` : `#${code}`;
+  const id = fit(idLabel, leftMax);
   const line1 =
     id + " ".repeat(Math.max(0, blockStart - displayWidth(id))) + padRight(seat, blockW);
 
@@ -180,13 +183,63 @@ function orderTotal(order, items) {
   );
 }
 
+/** @param {any[]} items @param {number} startIndex 0-based */
+function pushItemBlock(lines, items, startIndex = 0) {
+  const detailPad = "  ";
+  items.forEach((item, i) => {
+    const name = item.menu_item_name || item.menu_item_id || "メニュー";
+    const qty = Number(item.quantity) || 1;
+    const unit = Number(item.unit_price || 0);
+    const extras = toppingSumVnd(item.customization);
+    const baseUnit = Math.max(0, unit - extras);
+    const { toppings, notes } = splitDetails(item.customization);
+    const n = startIndex + i + 1;
+
+    lines.push({
+      text: namePrice(`${n}.${name} x${qty}`, baseUnit * qty),
+      bold: true,
+      align: "center",
+    });
+
+    for (const t of toppings) {
+      lines.push({
+        text: namePrice(`${detailPad}${DOT}${t.label}`, t.priceVnd * qty),
+        align: "center",
+      });
+    }
+    for (const note of notes) {
+      lines.push({
+        text: padRight(`${detailPad}${DOT}${note}`, COLS),
+        align: "center",
+      });
+    }
+  });
+}
+
 /**
  * @param {object} order
- * @param {{ mode?: 'new' | 'append', items?: any[], ticketNo?: string, ticketSeq?: number }} [opts]
+ * @param {{
+ *   mode?: 'new' | 'append',
+ *   items?: any[],
+ *   previousItems?: any[],
+ *   ticketNo?: string,
+ *   ticketSeq?: number,
+ * }} [opts]
  */
 export function formatKitchenTicket(order, opts = {}) {
   const mode = opts.mode ?? "new";
-  const items = Array.isArray(opts.items) ? opts.items : order.items ?? [];
+  const allOrderItems = Array.isArray(order.items) ? order.items : [];
+  const appended = Array.isArray(opts.items) ? opts.items : null;
+  const previousItems = Array.isArray(opts.previousItems)
+    ? opts.previousItems
+    : mode === "append" && appended
+      ? allOrderItems.slice(0, Math.max(0, allOrderItems.length - appended.length))
+      : [];
+  const newItems =
+    mode === "append"
+      ? appended ?? allOrderItems.slice(previousItems.length)
+      : appended ?? allOrderItems;
+
   const table = String(order.table_label || order.table_id || "—");
   const code = orderCode(order.id);
   const when = order.created_at || order.updated_at;
@@ -199,70 +252,62 @@ export function formatKitchenTicket(order, opts = {}) {
   const lines = [];
 
   lines.push({
-    text: mode === "append" ? "KITCHEN ORDER TICKET / 追加" : "KITCHEN ORDER TICKET",
+    text: "KITCHEN ORDER TICKET",
     align: "center",
     bold: true,
   });
   lines.push({ text: SHOP, align: "center", bold: true });
 
-  // Số thứ tự in trong ngày — Font A 1×1 đậm, viết hoa
   if (ticketNo) {
-    const noLabel = mode === "append" ? `${ticketNo} 追加` : ticketNo;
     lines.push({
-      text: noLabel,
+      text: ticketNo,
       align: "center",
       bold: true,
     });
   }
 
-  // Hơi rộng hơn 22 (trước bị dí quá) — vẫn sát, không chèn dòng trống
   lines.push({ type: "linespace", dots: 26 });
-  const [meta1, meta2] = metaIdSeatLines(code, table, formatReceivedAt(when));
-  // Khối nội dung: mỗi dòng đúng COLS + Font A + center
-  // → cả khối nằm giữa giấy, trong khối thì #/受付/món/giá vẫn thẳng cột
+  const [meta1, meta2] = metaIdSeatLines(code, table, formatReceivedAt(when), {
+    append: mode === "append",
+  });
   lines.push({ text: meta1, bold: true, align: "center" });
   lines.push({ text: meta2, bold: true, align: "center" });
   lines.push({ type: "linespace", dots: "default" });
   lines.push(rule());
 
-  if (!items.length) {
+  if (mode === "append") {
+    // Món đã gọi trước — để cộng 合計 đúng
+    if (previousItems.length) {
+      lines.push({
+        text: padRight("【ご注文済】", COLS),
+        align: "center",
+        bold: true,
+      });
+      pushItemBlock(lines, previousItems, 0);
+      lines.push(rule());
+    }
+    lines.push({
+      text: padRight("【追加】", COLS),
+      align: "center",
+      bold: true,
+    });
+    if (!newItems.length) {
+      lines.push({ text: "(なし)", align: "center" });
+    } else {
+      pushItemBlock(lines, newItems, previousItems.length);
+    }
+  } else if (!newItems.length) {
     lines.push({ text: "(なし)", align: "center" });
   } else {
-    items.forEach((item, i) => {
-      const name = item.menu_item_name || item.menu_item_id || "メニュー";
-      const qty = Number(item.quantity) || 1;
-      const unit = Number(item.unit_price || 0);
-      const extras = toppingSumVnd(item.customization);
-      const baseUnit = Math.max(0, unit - extras);
-      const { toppings, notes } = splitDetails(item.customization);
-
-      // 「1.」≈ 2 cột → thụt 2 spaces để「・」thẳng tên món (trong khối căn giữa)
-      const detailPad = "  ";
-
-      lines.push({
-        text: namePrice(`${i + 1}.${name} x${qty}`, baseUnit * qty),
-        bold: true,
-        align: "center",
-      });
-
-      for (const t of toppings) {
-        lines.push({
-          text: namePrice(`${detailPad}${DOT}${t.label}`, t.priceVnd * qty),
-          align: "center",
-        });
-      }
-      for (const n of notes) {
-        lines.push({
-          text: padRight(`${detailPad}${DOT}${n}`, COLS),
-          align: "center",
-        });
-      }
-    });
+    pushItemBlock(lines, newItems, 0);
   }
 
   lines.push(rule());
+  // Tổng cả đơn (món cũ + thêm) — không chỉ phần追加
+  const totalItems =
+    mode === "append" ? [...previousItems, ...newItems] : newItems;
   lines.push({
-    text: namePrice("合計", orderTotal(order, items)),
+    text: namePrice("合計", orderTotal(order, totalItems)),
     bold: true,
     align: "center",
   });
