@@ -8,7 +8,7 @@
 const COLS = 32;
 const PRICE_W = 8; // cột giá cố định (vd. "  1670円")
 const NAME_W = COLS - PRICE_W;
-const SHOP = "Tamon";
+const SHOP = "TAMON";
 const DOT = "・";
 
 const SPICE = { mild: "マイルド", medium: "ミディアム", hot: "辛口", extra_hot: "特辛" };
@@ -34,10 +34,11 @@ function orderCode(id) {
 
 function formatReceivedAt(iso) {
   try {
+    // yy/m/d — còn chỗ cho「受付:」+ cột bàn
     const d = new Date(iso);
     const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: "Asia/Tokyo",
-      year: "numeric",
+      year: "2-digit",
       month: "numeric",
       day: "numeric",
       hour: "numeric",
@@ -48,7 +49,7 @@ function formatReceivedAt(iso) {
     const hour = String(parseInt(get("hour"), 10) || 0);
     return `${get("year")}/${get("month")}/${get("day")} ${hour}:${get("minute")}`;
   } catch {
-    return "----/--/-- --:--";
+    return "--/--/-- --:--";
   }
 }
 
@@ -92,12 +93,10 @@ function leftRight(left, right, cols = COLS) {
 }
 
 /**
- * 2 dòng, trái/phải căn cột:
+ * 2 dòng cùng độ rộng COLS — # và 受付 thẳng cột khi căn giữa khổ giấy:
  *
  *   #31CF8DA9          席
- *   受付2026/7/28 1:05 カウンター2番
- *
- * 席 căn trái cùng mép với tên bàn.
+ *   受付:26/7/28 1:05  カウンター2番
  */
 function metaIdSeatLines(code, tableLabel, receivedAt) {
   const seat = "席";
@@ -108,13 +107,13 @@ function metaIdSeatLines(code, tableLabel, receivedAt) {
 
   const id = fit(`#${code}`, leftMax);
   const line1 =
-    id + " ".repeat(Math.max(1, blockStart - displayWidth(id))) + seat;
+    id + " ".repeat(Math.max(0, blockStart - displayWidth(id))) + padRight(seat, blockW);
 
-  const received = fit(`受付${receivedAt}`, leftMax);
+  const received = fit(`受付:${receivedAt}`, leftMax);
   const line2 =
     received +
-    " ".repeat(Math.max(1, blockStart - displayWidth(received))) +
-    tableStr;
+    " ".repeat(Math.max(0, blockStart - displayWidth(received))) +
+    padRight(tableStr, blockW);
 
   return [line1, line2];
 }
@@ -183,7 +182,7 @@ function orderTotal(order, items) {
 
 /**
  * @param {object} order
- * @param {{ mode?: 'new' | 'append', items?: any[] }} [opts]
+ * @param {{ mode?: 'new' | 'append', items?: any[], ticketNo?: string, ticketSeq?: number }} [opts]
  */
 export function formatKitchenTicket(order, opts = {}) {
   const mode = opts.mode ?? "new";
@@ -191,6 +190,10 @@ export function formatKitchenTicket(order, opts = {}) {
   const table = String(order.table_label || order.table_id || "—");
   const code = orderCode(order.id);
   const when = order.created_at || order.updated_at;
+  const ticketNo = (
+    opts.ticketNo ||
+    (opts.ticketSeq != null ? `NO.${String(opts.ticketSeq).padStart(3, "0")}` : null)
+  )?.toUpperCase?.() ?? null;
 
   /** @type {Array<string | Record<string, unknown>>} */
   const lines = [];
@@ -200,12 +203,25 @@ export function formatKitchenTicket(order, opts = {}) {
     align: "center",
     bold: true,
   });
-  lines.push({ text: SHOP, align: "center", bold: true, width: 2, height: 2 });
+  lines.push({ text: SHOP, align: "center", bold: true });
+
+  // Số thứ tự in trong ngày — Font A 1×1 đậm, viết hoa
+  if (ticketNo) {
+    const noLabel = mode === "append" ? `${ticketNo} 追加` : ticketNo;
+    lines.push({
+      text: noLabel,
+      align: "center",
+      bold: true,
+    });
+  }
+
   // Hơi rộng hơn 22 (trước bị dí quá) — vẫn sát, không chèn dòng trống
   lines.push({ type: "linespace", dots: 26 });
   const [meta1, meta2] = metaIdSeatLines(code, table, formatReceivedAt(when));
-  lines.push({ text: meta1, bold: true });
-  lines.push({ text: meta2, bold: true });
+  // Khối nội dung: mỗi dòng đúng COLS + Font A + center
+  // → cả khối nằm giữa giấy, trong khối thì #/受付/món/giá vẫn thẳng cột
+  lines.push({ text: meta1, bold: true, align: "center" });
+  lines.push({ text: meta2, bold: true, align: "center" });
   lines.push({ type: "linespace", dots: "default" });
   lines.push(rule());
 
@@ -220,21 +236,25 @@ export function formatKitchenTicket(order, opts = {}) {
       const baseUnit = Math.max(0, unit - extras);
       const { toppings, notes } = splitDetails(item.customization);
 
+      // 「1.」≈ 2 cột → thụt 2 spaces để「・」thẳng tên món (trong khối căn giữa)
+      const detailPad = "  ";
+
       lines.push({
         text: namePrice(`${i + 1}.${name} x${qty}`, baseUnit * qty),
         bold: true,
+        align: "center",
       });
 
       for (const t of toppings) {
         lines.push({
-          text: namePrice(`  ${DOT}${t.label}`, t.priceVnd * qty),
-          font: "font_b",
+          text: namePrice(`${detailPad}${DOT}${t.label}`, t.priceVnd * qty),
+          align: "center",
         });
       }
       for (const n of notes) {
         lines.push({
-          text: nameOnly(`  ${DOT}${n}`),
-          font: "font_b",
+          text: padRight(`${detailPad}${DOT}${n}`, COLS),
+          align: "center",
         });
       }
     });
@@ -244,6 +264,7 @@ export function formatKitchenTicket(order, opts = {}) {
   lines.push({
     text: namePrice("合計", orderTotal(order, items)),
     bold: true,
+    align: "center",
   });
 
   return lines;
