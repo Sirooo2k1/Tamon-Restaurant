@@ -50,6 +50,8 @@ export interface LineItemCustomization {
   seatLabel?: string;
   /** ぎょうざ等: 店内で提供 / お持ち帰り */
   serviceMode?: "dine_in" | "takeaway";
+  /** ぎょうざお持ち帰り: レジ袋が必要（+¥3 / 行） */
+  needsPlasticBag?: boolean;
 }
 
 export interface CartLineItem {

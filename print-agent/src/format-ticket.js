@@ -90,7 +90,7 @@ function namePrice(name, vnd) {
 
 /**
  * Xuống dòng theo độ rộng in (full-width = 2).
- * Ưu tiên ngắt sau ・／、()（） khoảng trắng.
+ * Ưu tiên ngắt sau ・／、()） khoảng trắng.
  */
 function wrapDisplayLines(text, maxWidth) {
   const src = String(text ?? "");
@@ -108,7 +108,6 @@ function wrapDisplayLines(text, maxWidth) {
       continue;
     }
 
-    // Tìm điểm ngắt đẹp gần cuối dòng hiện tại
     let breakAt = -1;
     for (let i = line.length - 1; i >= Math.max(0, line.length - 12); i--) {
       if (breakAfter.has(line[i])) {
@@ -129,9 +128,8 @@ function wrapDisplayLines(text, maxWidth) {
     }
 
     while (displayWidth(line) > maxWidth) {
-      out.push(fit(line, maxWidth));
-      // phần còn lại sau fit — lấy lại từ line gốc
-      let kept = fit(line, maxWidth);
+      const kept = fit(line, maxWidth);
+      out.push(kept);
       line = line.slice(kept.length);
     }
   }
@@ -166,16 +164,6 @@ function pushTextWrapped(lines, text, { bold = false } = {}) {
       align: "center",
     });
   }
-}
-
-function nameOnly(name) {
-  return padRight(name, NAME_W);
-}
-
-function leftRight(left, right, cols = COLS) {
-  const r = String(right ?? "");
-  const l = fit(left, Math.max(1, cols - displayWidth(r) - 1));
-  return `${l}${" ".repeat(Math.max(1, cols - displayWidth(l) - displayWidth(r)))}${r}`;
 }
 
 /**
@@ -277,8 +265,12 @@ function splitDetails(c, { omitDrinkVariant = false, omitPortion = false } = {})
 
   if (!c || typeof c !== "object") return { toppings, notes, noodleTemp };
 
-  if (c.serviceMode === "takeaway") notes.push("お持ち帰り");
-  else if (c.serviceMode === "dine_in") notes.push("店内");
+  if (c.serviceMode === "takeaway") {
+    notes.push("お持ち帰り・容器");
+    if (c.needsPlasticBag === true) notes.push("レジ袋");
+  } else if (c.serviceMode === "dine_in") {
+    notes.push("店内");
+  }
 
   // 麺量 đã gộp vào tên món — không in dòng「・麺量150g」
   if (!omitPortion && c.noodlePortionGrams) {

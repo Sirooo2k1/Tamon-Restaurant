@@ -1,5 +1,8 @@
 import { create } from "zustand";
 import { HIGHBALL_LEMON_SURCHARGE_VND } from "@/lib/drink-pricing";
+import {
+  gyozaTakeawayLineSurchargeVnd,
+} from "@/lib/gyoza-takeaway-pricing";
 import { tsukemenPortionSurchargeTotal } from "@/lib/tsukemen-portion-pricing";
 import type { CartLineItem, LineItemCustomization, MenuItem } from "@/lib/types";
 
@@ -10,12 +13,20 @@ function highballSurcharge(menuItem: MenuItem, c: LineItemCustomization): number
   return 0;
 }
 
+function computeUnitPrice(item: MenuItem, customization: LineItemCustomization): number {
+  return (
+    item.price +
+    (customization.extraToppings?.reduce((s, t) => s + t.price, 0) ?? 0) +
+    highballSurcharge(item, customization) +
+    tsukemenPortionSurchargeTotal(item, customization)
+  );
+}
+
 function computeLineTotal(item: MenuItem, qty: number, customization: LineItemCustomization): number {
-  let total = item.price * qty;
-  customization.extraToppings?.forEach((t) => (total += t.price * qty));
-  total += highballSurcharge(item, customization) * qty;
-  total += tsukemenPortionSurchargeTotal(item, customization) * qty;
-  return total;
+  return (
+    computeUnitPrice(item, customization) * qty +
+    gyozaTakeawayLineSurchargeVnd(item, customization)
+  );
 }
 
 interface CartState {
@@ -35,11 +46,7 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   addItem(menuItem, quantity, customization) {
     const id = `${menuItem.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const unitPrice =
-      menuItem.price +
-      (customization.extraToppings?.reduce((s, t) => s + t.price, 0) ?? 0) +
-      highballSurcharge(menuItem, customization) +
-      tsukemenPortionSurchargeTotal(menuItem, customization);
+    const unitPrice = computeUnitPrice(menuItem, customization);
     set((state) => ({
       items: [
         ...state.items,
@@ -77,10 +84,13 @@ export const useCartStore = create<CartState>((set, get) => ({
   },
 
   getSubtotal() {
-    return get().items.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
+    return get().items.reduce(
+      (sum, line) => sum + computeLineTotal(line.menuItem, line.quantity, line.customization),
+      0
+    );
   },
 
   clearCart() {
-    set({ items: [] });
+    set({ items: [], tableLabel: null });
   },
 }));

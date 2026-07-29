@@ -7,7 +7,14 @@ import { menuItems, categories } from "@/lib/menu-data";
 import type { MenuItem } from "@/lib/types";
 import { AddToCartModal } from "@/components/AddToCartModal";
 import { CartDrawer } from "@/components/CartDrawer";
+import { LanguageSwitcher } from "@/components/customer/LanguageSwitcher";
 import { useCartStore } from "@/store/cart-store";
+import { useCustomerLocale, type CustomerLocale } from "@/store/customer-locale-store";
+import { customerCopy } from "@/lib/customer-ui-copy";
+import {
+  categoryDisplayLabel,
+  menuItemDisplayName,
+} from "@/lib/customer-menu-label";
 import { tableDisplayLabelFromQrCode } from "@/lib/table-display-label";
 import {
   clearNavFromPopState,
@@ -20,11 +27,6 @@ import {
   syncRememberedMenuTableFromDisplayLabel,
 } from "@/lib/menu-table-session";
 import { cn } from "@/lib/utils";
-
-const TABS = [
-  { id: "ramen" as const, label: "つけ麺・ラーメン" },
-  { id: "gyoza_drink" as const, label: "ぎょうざ・ドリンク" },
-];
 
 const RAMEN_CATEGORY_IDS = [
   "tsukemen",
@@ -43,11 +45,14 @@ function MenuItemRow({
   item,
   soldOut,
   onAdd,
+  locale,
 }: {
   item: MenuItem;
   soldOut: boolean;
   onAdd: () => void;
+  locale: CustomerLocale;
 }) {
+  const t = customerCopy(locale);
   return (
     <div
       className={cn(
@@ -60,10 +65,10 @@ function MenuItemRow({
       {soldOut && (
         <div
           className="pointer-events-none absolute right-3 top-3 z-20 flex items-center gap-1 rounded-full border border-rose-200/80 bg-white/95 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 shadow-md backdrop-blur-sm sm:right-4 sm:top-4"
-          aria-label="売り切れ"
+          aria-label={t.soldOutBadge}
         >
           <Sparkles className="h-3 w-3 text-rose-500" aria-hidden />
-          本日売切
+          {t.soldOutBadge}
         </div>
       )}
       <div className="min-w-0 flex-1">
@@ -75,11 +80,11 @@ function MenuItemRow({
                 soldOut ? "text-gray-500 line-through decoration-rose-300/80 decoration-2" : "text-gray-800"
               )}
             >
-              {item.name}
+              {menuItemDisplayName(item, locale)}
             </h3>
             {soldOut && (
               <span className="hidden rounded-lg bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white shadow sm:inline">
-                売り切れ
+                {t.soldOutShort}
               </span>
             )}
             {item.highlight === "signature" && (
@@ -88,7 +93,7 @@ function MenuItemRow({
                 title="全粒粉の多聞麺が一番人気です"
               >
                 <Sparkles className="h-3 w-3 shrink-0 text-emerald-700" aria-hidden />
-                当店一番人気 · 多聞
+                {t.signatureBadge}
               </span>
             )}
           </div>
@@ -103,7 +108,7 @@ function MenuItemRow({
         </div>
         {soldOut ? (
           <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50/80 px-3 py-2 text-[12px] font-medium text-rose-900/90">
-            申し訳ございません、ただ今はご注文いただけません。
+            {t.soldOutHint}
           </p>
         ) : (
           <button
@@ -112,7 +117,7 @@ function MenuItemRow({
             className="mt-3 flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-100"
           >
             <span className="text-base leading-none">+</span>
-            Add to Cart
+            {t.addToCart}
           </button>
         )}
       </div>
@@ -137,7 +142,7 @@ function MenuItemRow({
               soldOut ? "text-rose-300/80" : "text-amber-600/60"
             )}
           >
-            写真
+            {t.photoFallback}
           </div>
         )}
         {soldOut && (
@@ -158,6 +163,13 @@ function MenuContent() {
   const setTableLabel = useCartStore((s) => s.setTableLabel);
   const clearCart = useCartStore((s) => s.clearCart);
   const tableLabel = useCartStore((s) => s.tableLabel);
+  const locale = useCustomerLocale();
+  const t = customerCopy(locale);
+
+  const TABS = [
+    { id: "ramen" as const, label: t.tabRamen },
+    { id: "gyoza_drink" as const, label: t.tabGyozaDrink },
+  ];
 
   /**
    * BFCache でメニューが古い React 状態（卓・カート）のまま戻るケースを防ぐ。
@@ -341,29 +353,35 @@ function MenuContent() {
       const cat = categories.find((c) => c.id === catId);
       return {
         id: catId,
-        label: cat?.label ?? catId,
+        label: cat ? categoryDisplayLabel(cat, locale) : catId,
         items: menuItems.filter((i) => i.category === catId),
       };
     });
-  }, []);
+  }, [locale]);
 
   const gyozaSection = useMemo(() => {
     const cat = categories.find((c) => c.id === "gyoza");
     return {
       id: "gyoza" as const,
-      label: cat?.label ?? "ぎょうざ",
+      label: categoryDisplayLabel(
+        cat ?? { id: "gyoza", label: "ぎょうざ", labelEn: "Gyoza" },
+        locale
+      ),
       items: menuItems.filter((i) => i.category === "gyoza"),
     };
-  }, []);
+  }, [locale]);
 
   const drinkSection = useMemo(() => {
     const cat = categories.find((c) => c.id === "drink");
     return {
       id: "drink" as const,
-      label: cat?.label ?? "ドリンク",
+      label: categoryDisplayLabel(
+        cat ?? { id: "drink", label: "ドリンク", labelEn: "Drinks" },
+        locale
+      ),
       items: menuItems.filter((i) => i.category === "drink"),
     };
-  }, []);
+  }, [locale]);
 
   return (
     <main
@@ -396,19 +414,24 @@ function MenuContent() {
             background: "linear-gradient(90deg, #ecfdf5 0%, #fffbeb 100%)",
           }}
         >
-          <p className="text-sm font-semibold uppercase tracking-wider text-emerald-700">
-            Menu
-          </p>
-          <h1 className="mt-1 text-xl font-bold text-gray-800 sm:text-2xl">
-            自家製麺 多聞
-          </h1>
-          <p className="mt-1 text-xs text-gray-600 sm:text-sm">
-            つけ麺・らーめん、餃子お持ち帰り
-          </p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold uppercase tracking-wider text-emerald-700">
+                {t.menuEyebrow}
+              </p>
+              <h1 className="mt-1 text-xl font-bold text-gray-800 sm:text-2xl">
+                自家製麺 多聞
+              </h1>
+              <p className="mt-1 text-xs text-gray-600 sm:text-sm">
+                {t.menuTagline}
+              </p>
+            </div>
+            <LanguageSwitcher className="shrink-0" />
+          </div>
           {tableLabel && (
             <p className="mt-3 inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-3 py-2 text-sm font-semibold text-emerald-900 shadow-sm">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-                ご利用席
+                {t.tableLabel}
               </span>
               <span className="font-mono text-emerald-900">{tableLabel}</span>
             </p>
@@ -448,10 +471,10 @@ function MenuContent() {
                     {isExtraSoup && (
                       <div className="mt-0 mb-10 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm">
                         <p className="text-xs font-semibold text-emerald-800 sm:text-sm">
-                          ★ つけ麺と多聞つけ麺 違いは麺のみです
+                          {t.tsukemenDiffTitle}
                         </p>
                         <p className="mt-1 text-xs leading-relaxed text-gray-600">
-                          つけ麺はつるつる、なめらかなのどごし。多聞はもっちり、噛みごたえのある風味豊かな全粒粉麺です。
+                          {t.tsukemenDiffBody}
                         </p>
                       </div>
                     )}
@@ -463,7 +486,7 @@ function MenuContent() {
                       </div>
                       {section.id === "topping" && (
                         <p className="mb-2 text-xs text-gray-600">
-                          ラーメンをご注文の際にトッピングをどうぞ！単品での注文は出来ません。
+                          {t.toppingNote}
                         </p>
                       )}
                       <div className="space-y-0">
@@ -473,6 +496,7 @@ function MenuContent() {
                             item={item}
                             soldOut={soldOutSet.has(item.id)}
                             onAdd={() => setSelectedItem(item)}
+                            locale={locale}
                           />
                         ))}
                       </div>
@@ -499,6 +523,7 @@ function MenuContent() {
                         item={item}
                         soldOut={soldOutSet.has(item.id)}
                         onAdd={() => setSelectedItem(item)}
+                        locale={locale}
                       />
                     ))}
                   </div>
@@ -518,6 +543,7 @@ function MenuContent() {
                         item={item}
                         soldOut={soldOutSet.has(item.id)}
                         onAdd={() => setSelectedItem(item)}
+                        locale={locale}
                       />
                     ))}
                   </div>
@@ -530,7 +556,7 @@ function MenuContent() {
           <aside
             className="mt-8 rounded-2xl border border-emerald-100/90 bg-gradient-to-br from-white via-emerald-50/40 to-amber-50/50 px-4 py-4 shadow-[0_8px_32px_-12px_rgba(16,185,129,0.18)] sm:px-5 sm:py-5"
             role="note"
-            aria-label="メニュー写真に関するご案内"
+            aria-label={t.photoNoteTitle}
           >
             <div className="flex gap-3.5 sm:gap-4">
               <div
@@ -541,17 +567,10 @@ function MenuContent() {
               </div>
               <div className="min-w-0 space-y-2">
                 <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-emerald-800/95">
-                  写真について
+                  {t.photoNoteTitle}
                 </p>
                 <p className="text-[12px] leading-relaxed text-gray-700 sm:text-[13px] sm:leading-relaxed">
-                  メニュー掲載の写真の一部は、お料理の盛り付けイメージとして掲載しております。
-                  <span className="mt-2 block">
-                    お客様にはご理解賜りますよう、何卒よろしくお願い申し上げます。
-                  </span>
-                </p>
-                <p className="border-t border-emerald-100/80 pt-2.5 text-[11px] leading-relaxed text-gray-500 sm:text-xs sm:leading-relaxed">
-                  <span className="font-medium text-gray-600">English:</span> Some photos on this menu are
-                  included to illustrate how dishes may be plated. We appreciate your understanding.
+                  {t.photoNoteBody}
                 </p>
               </div>
             </div>
@@ -570,7 +589,7 @@ function MenuContent() {
           onAdded={(name) =>
             setToast({
               id: Date.now(),
-              message: `${name} をカートに追加しました`,
+              message: t.addedToCart(name),
             })
           }
         />

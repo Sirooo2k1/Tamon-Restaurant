@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
+import { useCustomerLocale } from "@/store/customer-locale-store";
+import { customerCopy } from "@/lib/customer-ui-copy";
 import { fetchTrackedOrderId, TRACKED_ORDER_UPDATED_EVENT } from "@/lib/recent-order-tracking";
 
 /** Giỏ lưu đơn vị nội bộ 円×200 (cùng `Y()` trong menu-data), không phải số yen thô. */
@@ -28,6 +30,8 @@ const cartDockStyle: React.CSSProperties = {
 export function CartDrawer() {
   const pathname = usePathname();
   const hideCartBar = pathname === "/checkout";
+  const locale = useCustomerLocale();
+  const t = customerCopy(locale);
 
   const getSubtotal = useCartStore((s) => s.getSubtotal);
   const itemCount = useCartStore((s) => s.items.reduce((n, l) => n + l.quantity, 0));
@@ -68,7 +72,7 @@ export function CartDrawer() {
             <Link
               href={`/order/${trackedOrderId}`}
               className="group relative flex h-[3.25rem] min-w-[3.25rem] items-center justify-center rounded-2xl border border-amber-300/90 bg-gradient-to-br from-amber-50 to-white px-3 shadow-[0_8px_30px_rgba(180,83,9,0.12)] backdrop-blur-md transition hover:border-amber-400 sm:h-14 sm:min-w-[3.5rem] sm:rounded-[1.1rem]"
-              aria-label="ご注文の進捗を全画面で見る"
+              aria-label={t.orderProgressAria}
             >
               <ClipboardList
                 className="h-6 w-6 text-amber-800 transition group-hover:text-amber-900 sm:h-7 sm:w-7"
@@ -94,7 +98,7 @@ export function CartDrawer() {
               <Link
                 href="/checkout"
                 className="flex w-full items-center justify-between gap-4 px-5 py-3.5 text-left transition hover:opacity-95 active:opacity-90 sm:gap-5 sm:px-6 sm:py-4"
-                aria-label={`VIEW CART、${itemCount}点、${formatYenJaFromInternal(subtotal)}`}
+                aria-label={`${t.viewCart}, ${itemCount}, ${formatYenJaFromInternal(subtotal)}`}
               >
                 <span className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
                   <span className="inline-flex size-9 shrink-0 select-none items-center justify-center overflow-hidden rounded-full border border-emerald-200/80 bg-emerald-100 text-center text-sm font-bold tabular-nums leading-none text-emerald-950 sm:size-10 sm:text-[0.9375rem]">
@@ -102,10 +106,10 @@ export function CartDrawer() {
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-800 sm:text-[11px]">
-                      VIEW CART
+                      {t.viewCart}
                     </span>
                     <span className="mt-0.5 block text-[15px] font-bold leading-[1.15] tracking-tight text-gray-900 sm:text-[17px]">
-                      注文手続きへ
+                      {t.goCheckout}
                     </span>
                   </span>
                 </span>

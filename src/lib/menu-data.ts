@@ -327,7 +327,7 @@ export const menuItems: MenuItem[] = [
     imageUrl: "/menu/cheese-gyoza.avif",
     options: [],
   },
-  // --- ドリンク (Drinks) --- (ảnh menu: 瓶ビール600、ドライゼロ400、チューハイレモン400、ハイボールP400/L450、SUIジンソーダ400、ビアボール450、コーラ250、ウーロン茶250)
+  // --- ドリンク (Drinks) --- (ảnh menu: 瓶ビール600、ドライゼロ450、チューハイレモン400、ハイボールP400/L450、SUIジンソーダ400、ビアボール450、コーラ250、ウーロン茶250)
   {
     id: "bottle-beer",
     name: "瓶ビール (ラガー・スーパードライ)",
@@ -343,8 +343,8 @@ export const menuItems: MenuItem[] = [
     name: "ドライゼロ (ノンアルコール)",
     nameVi: "Dry Zero (Non-alcoholic)",
     category: "drink",
-    price: Y(400),
-    imageUrl: "/menu/Dry%20Zero.png",
+    price: Y(450),
+    imageUrl: "/menu/AsahiZero.jpg",
     options: [],
   },
   {

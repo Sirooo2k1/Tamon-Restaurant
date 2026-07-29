@@ -8,6 +8,10 @@ import { Suspense, useState, useCallback, useEffect, useMemo, useRef } from "rea
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useOrders } from "@/hooks/use-orders";
 import { displayMenuItemNameJa } from "@/lib/menu-display";
+import {
+  formatGyozaServiceModePartsJa,
+  lineTotalWithGyozaFeesVnd,
+} from "@/lib/gyoza-takeaway-pricing";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import type { OrderRecord, OrderStatus, LineItemCustomization, OrderItemPayload } from "@/lib/types";
 import { getLineFulfillmentStatus } from "@/lib/order-line-fulfillment";
@@ -112,9 +116,7 @@ function formatCustomization(c: LineItemCustomization | undefined): string | nul
       c.beerBallVariant === "lemon" ? "レモン" : c.beerBallVariant === "plum" ? "うめ" : "メロン";
     parts.push(`ビアボール: ${ja}`);
   }
-  if (c.serviceMode) {
-    parts.push(c.serviceMode === "takeaway" ? "お持ち帰り" : "店内");
-  }
+  parts.push(...formatGyozaServiceModePartsJa(c));
   if (c.note?.trim()) parts.push(c.note.trim());
   if (c.spiceLevel && c.spiceLevel !== "none") {
     const sj = SPICE_LABEL_JA[c.spiceLevel];
@@ -842,7 +844,12 @@ function OrdersPageInner() {
                     <ul className="divide-y divide-gray-100">
                       {itemsPayload.map((item, idx) => {
                         const custom = formatCustomization(item.customization);
-                        const lineSum = item.unit_price * item.quantity;
+                        const lineSum = lineTotalWithGyozaFeesVnd(
+                          { category: item.menu_category === "gyoza" ? "gyoza" : "side" },
+                          item.unit_price,
+                          item.quantity,
+                          item.customization
+                        );
                         const isDelivered = getLineFulfillmentStatus(item) === "delivered";
                         const rowKey = `${order.id}-${idx}`;
                         const lineBusy = linePatchKey === rowKey;
@@ -1170,7 +1177,12 @@ function OrdersPageInner() {
                 <ul className="max-h-48 space-y-2 overflow-y-auto rounded-xl border border-gray-100 bg-white px-3 py-2">
                   {(activeModal.order.items as OrderItemPayload[]).map((item, idx) => {
                     const custom = formatCustomization(item.customization);
-                    const lineTotal = item.unit_price * item.quantity;
+                    const lineTotal = lineTotalWithGyozaFeesVnd(
+                      { category: item.menu_category === "gyoza" ? "gyoza" : "side" },
+                      item.unit_price,
+                      item.quantity,
+                      item.customization
+                    );
                     const lineNameJa = displayMenuItemNameJa(item.menu_item_id, item.menu_item_name);
                     return (
                       <li key={idx} className="border-b border-gray-50 pb-2 text-sm last:border-0 last:pb-0">
@@ -1299,7 +1311,12 @@ function OrdersPageInner() {
                     activeModal.order.items.slice(activeModal.previousItemCount) as OrderItemPayload[]
                   ).map((item, idx) => {
                     const custom = formatCustomization(item.customization);
-                    const lineTotal = item.unit_price * item.quantity;
+                    const lineTotal = lineTotalWithGyozaFeesVnd(
+                      { category: item.menu_category === "gyoza" ? "gyoza" : "side" },
+                      item.unit_price,
+                      item.quantity,
+                      item.customization
+                    );
                     const lineNameJa = displayMenuItemNameJa(item.menu_item_id, item.menu_item_name);
                     return (
                       <li

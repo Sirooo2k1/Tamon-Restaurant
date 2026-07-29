@@ -28,7 +28,15 @@ import {
   TRACKED_ORDER_UPDATED_EVENT,
 } from "@/lib/recent-order-tracking";
 import { CartDrawer } from "@/components/CartDrawer";
+import { LanguageSwitcher } from "@/components/customer/LanguageSwitcher";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
+import {
+  formatGyozaServiceModePartsJa,
+  lineTotalWithGyozaFeesVnd,
+} from "@/lib/gyoza-takeaway-pricing";
+import { menuItemDisplayName } from "@/lib/customer-menu-label";
+import { customerCopy } from "@/lib/customer-ui-copy";
+import { useCustomerLocale } from "@/store/customer-locale-store";
 import {
   clearNavFromPopState,
   menuHrefForCustomerNavigation,
@@ -75,11 +83,7 @@ function formatCustomization(customization: LineItemCustomization): string | nul
           : "メロン";
     parts.push(`ビアボール: ${ja}`);
   }
-  if (customization.serviceMode) {
-    parts.push(
-      customization.serviceMode === "takeaway" ? "お持ち帰り" : "店内"
-    );
-  }
+  parts.push(...formatGyozaServiceModePartsJa(customization));
   if (customization.note?.trim()) parts.push(customization.note.trim());
   if (customization.spiceLevel && customization.spiceLevel !== "none") {
     const sj = SPICE_LABEL_JA[customization.spiceLevel];
@@ -108,6 +112,8 @@ const ALLOW_ORDER_WITHOUT_TABLE =
 export default function CheckoutPage() {
   const { items, getSubtotal, tableLabel, setTableLabel, clearCart, removeItem } =
     useCartStore();
+  const locale = useCustomerLocale();
+  const t = customerCopy(locale);
   const [step, setStep] = useState<"form" | "sending" | "success" | "error">("form");
   const [orderId, setOrderId] = useState<string | null>(null);
   const [orderWasMerged, setOrderWasMerged] = useState(false);
@@ -314,14 +320,14 @@ export default function CheckoutPage() {
               <ShoppingBag className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-gray-800">カートは空です</h1>
-              <p className="mt-1 text-sm text-gray-500">メニューから商品を追加してください。</p>
+              <h1 className="text-lg font-semibold text-gray-800">{t.cartEmpty}</h1>
+              <p className="mt-1 text-sm text-gray-500">{t.cartEmptyHint}</p>
             </div>
             <Link
               href={menuHrefForCustomerNavigation(tableLabel)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-100/90 bg-emerald-50/90 px-5 py-3.5 text-sm font-semibold text-emerald-900 shadow-sm ring-1 ring-emerald-50/85 transition hover:bg-emerald-100/95"
             >
-              メニューを見る
+              {t.seeMenu}
             </Link>
           </div>
         </div>
@@ -357,12 +363,12 @@ export default function CheckoutPage() {
         style={{ background: "linear-gradient(180deg, #fef8f3 0%, #fef3e8 50%, #fef8f3 100%)" }}
       >
         <CheckCircle2 className="h-9 w-9 text-emerald-400" strokeWidth={1.85} />
-        <p className="mt-4 text-gray-600">ご注文は完了しました。</p>
+        <p className="mt-4 text-gray-600">{t.orderDone}</p>
         <Link
           href={menuHrefForCustomerNavigation(tableLabel)}
           className="mt-6 inline-flex rounded-2xl border border-emerald-100/90 bg-emerald-50/90 px-6 py-3 text-sm font-semibold text-emerald-900 shadow-sm ring-1 ring-emerald-50/85 transition hover:bg-emerald-100/95"
         >
-          メニューへ
+          {t.toMenu}
         </Link>
       </main>
     );
@@ -379,7 +385,7 @@ export default function CheckoutPage() {
             <AlertCircle className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-800">エラーが発生しました</h1>
+            <h1 className="text-lg font-semibold text-gray-800">{t.errorTitle}</h1>
             <p className="mt-1 text-sm text-red-600">{errorMessage}</p>
           </div>
           <button
@@ -387,7 +393,7 @@ export default function CheckoutPage() {
             onClick={() => setStep("form")}
             className="w-full rounded-2xl bg-emerald-600 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
           >
-            もう一度試す
+            {t.tryAgain}
           </button>
         </div>
       </main>
@@ -401,13 +407,16 @@ export default function CheckoutPage() {
     >
       <CartDrawer />
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
-        <Link
-          href={menuHrefForCustomerNavigation(tableLabel)}
-          className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          メニューに戻る
-        </Link>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Link
+            href={menuHrefForCustomerNavigation(tableLabel)}
+            className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {t.backToMenu}
+          </Link>
+          <LanguageSwitcher />
+        </div>
 
         <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/95 shadow-lg sm:rounded-[2rem]">
           {/* Header */}
@@ -415,9 +424,9 @@ export default function CheckoutPage() {
             className="px-4 py-5 sm:px-6 sm:py-6"
             style={{ background: "linear-gradient(90deg, #ecfdf5 0%, #fffbeb 100%)" }}
           >
-            <p className="text-xs font-semibold tracking-wider text-emerald-600">ご注文手続き</p>
-            <h1 className="mt-1 text-xl font-bold text-gray-800 sm:text-2xl">ご注文内容の確認</h1>
-            <p className="mt-0.5 text-sm text-gray-600">カート内 {items.length} 品</p>
+            <p className="text-xs font-semibold tracking-wider text-emerald-600">{t.checkoutEyebrow}</p>
+            <h1 className="mt-1 text-xl font-bold text-gray-800 sm:text-2xl">{t.checkoutTitle}</h1>
+            <p className="mt-0.5 text-sm text-gray-600">{t.cartItemsCount(items.length)}</p>
           </header>
 
           <div className="space-y-6 p-4 sm:p-6">
@@ -425,10 +434,10 @@ export default function CheckoutPage() {
             {mergeTarget && mergeEligible && (
               <div className="rounded-2xl border border-emerald-200/90 bg-emerald-50/60 px-4 py-3">
                 <p className="text-sm font-medium text-emerald-900">
-                  追加のご注文です
+                  {t.appendOrder}
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-emerald-800/90">
-                  カートの内容は、現在ご利用中の注文にまとめてお届けします。送信後は同じ注文番号で追跡いただけます。
+                  {t.appendOrderBody}
                 </p>
               </div>
             )}
@@ -437,12 +446,12 @@ export default function CheckoutPage() {
                 <p className="text-xs leading-relaxed text-amber-900/90">
                   {String(mergeTarget.payment_status ?? "").toLowerCase().trim() === "paid" ||
                   String(mergeTarget.status ?? "").toLowerCase().trim() === "paid"
-                    ? "この注文は会計済みのため、同じ注文には追加できません。新規のご注文として送信してください。"
+                    ? t.mergePaid
                     : String(mergeTarget.status ?? "").toLowerCase().trim() === "cancelled"
-                      ? "この注文はキャンセル済みのため、同じ注文には追加できません。新規注文として送信されます。"
+                      ? t.mergeCancelled
                       : !tableLabelsMatch(mergeTarget.tableLabel, tableLabel)
-                        ? "卓番が元の注文と異なるため、新規注文として送信されます。"
-                        : "新規注文として送信されます。"}
+                        ? t.mergeTableMismatch
+                        : t.mergeNew}
                 </p>
               </div>
             )}
@@ -451,12 +460,18 @@ export default function CheckoutPage() {
             <section>
               <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
                 <ShoppingBag className="h-4 w-4 text-emerald-600" />
-                ご注文内容
+                {t.orderContents}
               </h2>
               <div className="space-y-0 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50/50">
                 {items.map((line, index) => {
                   const customText = formatCustomization(line.customization);
-                  const lineTotal = line.unitPrice * line.quantity;
+                  const lineTotal = lineTotalWithGyozaFeesVnd(
+                    line.menuItem,
+                    line.unitPrice,
+                    line.quantity,
+                    line.customization
+                  );
+                  const feeExtra = lineTotal - line.unitPrice * line.quantity;
                   return (
                     <div
                       key={line.id}
@@ -464,7 +479,7 @@ export default function CheckoutPage() {
                     >
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-gray-800">
-                          {line.menuItem.name}
+                          {menuItemDisplayName(line.menuItem, locale)}
                           <span className="ml-1.5 text-gray-500">× {line.quantity}</span>
                         </p>
                         {customText && (
@@ -475,6 +490,7 @@ export default function CheckoutPage() {
                         <div className="flex flex-col items-end text-right">
                           <span className="text-sm text-amber-600 sm:text-base">
                             ¥{toYen(line.unitPrice)} × {line.quantity}
+                            {feeExtra > 0 ? ` + ¥${toYen(feeExtra)}` : ""}
                           </span>
                           <span className="text-sm font-semibold text-gray-800">
                             ¥{toYen(lineTotal)}
@@ -484,7 +500,7 @@ export default function CheckoutPage() {
                           type="button"
                           onClick={() => removeItem(line.id)}
                           className="inline-flex items-center justify-center rounded-full border border-gray-200 bg-white p-2 text-xs text-gray-400 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                          aria-label="削除"
+                          aria-label={t.remove}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -502,13 +518,13 @@ export default function CheckoutPage() {
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-200/80 text-amber-700">
                     <QrCode className="h-4 w-4" />
                   </span>
-                  ご注文方法
+                  {t.howToOrder}
                 </h3>
                 <p className="mt-1.5 text-sm text-amber-900">
-                  お席のQRコードを読み取ってご注文ください。
+                  {t.howToOrderBody}
                 </p>
                 <p className="mt-0.5 text-xs text-amber-800/80">
-                  お待たせせず、スムーズにご注文いただけます。
+                  {t.howToOrderSub}
                 </p>
               </div>
             )}
@@ -517,7 +533,7 @@ export default function CheckoutPage() {
             {requireLocationCheck && locationStatus === "checking" && (
               <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50/60 px-4 py-3 text-sm text-emerald-800">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-                位置情報を確認しています…
+                {t.locationChecking}
               </div>
             )}
             {/* Chỉ chặn khi xác định được là đang ở ngoài quán; từ chối/lỗi vị trí vẫn cho gửi */}
@@ -525,16 +541,16 @@ export default function CheckoutPage() {
               <div className="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-4">
                 <p className="flex items-center gap-2 text-sm font-medium text-amber-900">
                   <MapPin className="h-4 w-4 shrink-0" />
-                  ご注文は店内でお願いします
+                  {t.locationOutside}
                 </p>
                 <p className="mt-1 text-xs text-amber-800/80">
-                  お手元のQRはお席でスキャンしてご利用ください。
+                  {t.locationOutsideHint}
                 </p>
               </div>
             )}
             {requireLocationCheck && (locationStatus === "denied" || locationStatus === "error") && (
               <p className="text-xs text-gray-500">
-                位置情報が利用できませんでした。店内の方はそのままご注文いただけます。
+                {t.locationUnavailable}
               </p>
             )}
 
@@ -544,50 +560,50 @@ export default function CheckoutPage() {
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                   <Utensils className="h-4 w-4" />
                 </span>
-                ご利用の流れ
+                {t.flowTitle}
               </h2>
               <ol className="space-y-2 text-sm text-gray-700">
                 <li className="flex gap-2">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <QrCode className="h-3.5 w-3.5" />
                   </span>
-                  <span>QRコードを読み取り、商品をお選びください</span>
+                  <span>{t.flow1}</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <ChefHat className="h-3.5 w-3.5" />
                   </span>
-                  <span>ご注文後、キッチンにて準備いたします</span>
+                  <span>{t.flow2}</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <Package className="h-3.5 w-3.5" />
                   </span>
-                  <span>商品が出来上がりましたら、お席までお持ちいたします</span>
+                  <span>{t.flow3}</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                     <Wallet className="h-3.5 w-3.5" />
                   </span>
-                  <span>お支払いは商品お受け取り時、またはレジにてお願いいたします</span>
+                  <span>{t.flow4}</span>
                 </li>
               </ol>
               <div className="mt-4 border-t border-emerald-100 pt-3">
                 <h3 className="flex items-center gap-2 text-xs font-semibold text-emerald-800">
                   <Droplets className="h-4 w-4 text-emerald-600" />
-                  お水について
+                  {t.waterTitle}
                 </h3>
                 <p className="mt-0.5 text-sm text-gray-700">
-                  お水はお席にご用意しております。ご自由にお飲みください。
+                  {t.waterBody}
                 </p>
               </div>
               <div className="mt-3 border-t border-emerald-100 pt-3">
                 <h3 className="flex items-center gap-2 text-xs font-semibold text-emerald-800">
                   <HelpCircle className="h-4 w-4 text-emerald-600" />
-                  ご案内
+                  {t.guideTitle}
                 </h3>
                 <p className="mt-0.5 text-sm text-gray-700">
-                  ご不明な点がございましたら、スタッフまでお気軽にお声がけください。
+                  {t.guideBody}
                 </p>
               </div>
             </section>
@@ -599,7 +615,7 @@ export default function CheckoutPage() {
                   <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                     <Wallet className="h-4 w-4" />
                   </span>
-                  <span className="text-sm font-medium text-gray-600">合計</span>
+                  <span className="text-sm font-medium text-gray-600">{t.subtotal}</span>
                 </div>
                 <span className="text-2xl font-bold text-emerald-700">¥{toYen(subtotal)}</span>
               </div>
@@ -615,12 +631,12 @@ export default function CheckoutPage() {
               {step === "sending" ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
-                  ご注文を送信中…
+                  {t.sending}
                 </>
               ) : mergeEligible ? (
-                "追加の内容を送信する"
+                t.placeOrderAppend
               ) : (
-                "注文を送信する"
+                t.placeOrder
               )}
             </button>
           </div>

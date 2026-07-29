@@ -30,6 +30,10 @@ import { clearTrackedOrderOnServer } from "@/lib/recent-order-tracking";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import { displayMenuItemNameJa } from "@/lib/menu-display";
 import {
+  formatGyozaServiceModePartsJa,
+  lineTotalWithGyozaFeesVnd,
+} from "@/lib/gyoza-takeaway-pricing";
+import {
   clearRememberedMenuTableCode,
   markPostPaidBlockTableFromHistory,
   menuHrefForCustomerNavigation,
@@ -769,6 +773,13 @@ export function OrderTrackingExperience({
               {itemLines.map((line, idx) => {
                 const delivered = isLineDeliveredForCustomerView(line, order.status);
                 const noodleLine = formatNoodlePortionLineJa(line.customization);
+                const gyozaParts = formatGyozaServiceModePartsJa(line.customization);
+                const lineTotal = lineTotalWithGyozaFeesVnd(
+                  { category: line.menu_category === "gyoza" ? "gyoza" : "side" },
+                  line.unit_price,
+                  line.quantity,
+                  line.customization
+                );
                 return (
                   <li key={idx} className="relative border-b border-emerald-100/25 py-2 last:border-0">
                     <div
@@ -789,8 +800,13 @@ export function OrderTrackingExperience({
                               {noodleLine}
                             </p>
                           )}
+                          {gyozaParts.length > 0 && (
+                            <p className="mt-1 text-[11px] font-medium leading-snug text-amber-900/85">
+                              {gyozaParts.join(" · ")}
+                            </p>
+                          )}
                           <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-800">
-                            ¥{toYen(line.unit_price * line.quantity)}
+                            ¥{toYen(lineTotal)}
                           </span>
                         </div>
                         {delivered && (

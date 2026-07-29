@@ -2,6 +2,9 @@
  * Giá đơn server-side — không tin unit_price / total_amount từ client.
  */
 import { HIGHBALL_LEMON_SURCHARGE_VND } from "@/lib/drink-pricing";
+import {
+  gyozaTakeawayLineSurchargeVnd,
+} from "@/lib/gyoza-takeaway-pricing";
 import { menuItems } from "@/lib/menu-data";
 import { tsukemenPortionSurchargeTotal } from "@/lib/tsukemen-portion-pricing";
 import type { LineItemCustomization, OrderItemPayload } from "@/lib/types";
@@ -108,8 +111,15 @@ function sanitizeCustomization(
       // Mặc định店内 nếu thiếu (tránh chặn đơn cũ / edge)
       c.serviceMode = "dine_in";
     }
+    if (c.serviceMode === "takeaway") {
+      c.needsPlasticBag = c.needsPlasticBag === true;
+      if (!c.needsPlasticBag) delete c.needsPlasticBag;
+    } else {
+      delete c.needsPlasticBag;
+    }
   } else {
     delete c.serviceMode;
+    delete c.needsPlasticBag;
   }
 
   return { ok: true, customization: c };
@@ -175,7 +185,7 @@ export function priceOrderLinesFromMenu(
       menu_category: menu.category,
       fulfillment_status: fulfillment,
     });
-    total += unit * qty;
+    total += unit * qty + gyozaTakeawayLineSurchargeVnd(menu, cust.customization);
   }
 
   return { ok: true, items: priced, total_amount: total };

@@ -4,6 +4,10 @@
  */
 import type { OrderRecord, LineItemCustomization, OrderItemPayload } from "@/lib/types";
 import { displayMenuItemNameJa } from "@/lib/menu-display";
+import {
+  formatGyozaServiceModePartsJa,
+  lineTotalWithGyozaFeesVnd,
+} from "@/lib/gyoza-takeaway-pricing";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 
 const STORE_NAME = "自家製麺 多聞";
@@ -51,9 +55,7 @@ function formatCustomization(c: LineItemCustomization | undefined): string | nul
       c.beerBallVariant === "lemon" ? "レモン" : c.beerBallVariant === "plum" ? "うめ" : "メロン";
     parts.push(`ビアボール: ${ja}`);
   }
-  if (c.serviceMode) {
-    parts.push(c.serviceMode === "takeaway" ? "お持ち帰り" : "店内");
-  }
+  parts.push(...formatGyozaServiceModePartsJa(c));
   if (c.note?.trim()) parts.push(c.note.trim());
   if (c.spiceLevel && c.spiceLevel !== "none") {
     const sj = SPICE_LABEL_JA[c.spiceLevel];
@@ -133,7 +135,12 @@ export function CustomerPaymentReceipt({ order }: { order: OrderRecord }) {
         <ul className="space-y-2.5">
           {items.map((item, idx) => {
             const custom = formatCustomization(item.customization);
-            const lineTotal = item.unit_price * item.quantity;
+            const lineTotal = lineTotalWithGyozaFeesVnd(
+              { category: item.menu_category === "gyoza" ? "gyoza" : "side" },
+              item.unit_price,
+              item.quantity,
+              item.customization
+            );
             return (
               <li
                 key={`${order.id}-cust-${idx}`}

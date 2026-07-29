@@ -5,8 +5,7 @@
   "description": "Local ePOS agent: kitchen tickets → Epson TM-T88VI",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
-    "test-print": "node src/test-print.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
