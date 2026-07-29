@@ -17,6 +17,8 @@ type Copy = {
   photoNoteEnOnly: string | null;
   tsukemenDiffTitle: string;
   tsukemenDiffBody: string;
+  /** Topping đi kèm món つけ麺 / 多聞 (không có chữ「トッピング」) */
+  tsukemenIncludedToppings: string[];
   toppingNote: string;
   addedToCart: (name: string) => string;
   // modal
@@ -139,6 +141,7 @@ const ja: Copy = {
   tsukemenDiffTitle: "★ つけ麺と多聞つけ麺 違いは麺のみです",
   tsukemenDiffBody:
     "つけ麺はつるつる、なめらかなのどごし。多聞はもっちり、噛みごたえのある風味豊かな全粒粉麺です。",
+  tsukemenIncludedToppings: ["メンマ", "チャーシュー", "水菜入り"],
   toppingNote: "ラーメンをご注文の際にトッピングをどうぞ！単品での注文は出来ません。",
   addedToCart: (name) => `${name} をカートに追加しました`,
   addToOrder: "ご注文に追加",
@@ -261,6 +264,7 @@ const en: Copy = {
   tsukemenDiffTitle: "★ Tsukemen vs Tamon — only the noodles differ",
   tsukemenDiffBody:
     "Regular tsukemen is smooth and slippery. Tamon uses chewy whole-wheat noodles with more bite and flavor.",
+  tsukemenIncludedToppings: ["Menma", "Chashu", "Mizuna"],
   toppingNote: "Toppings are for ramen orders only — they cannot be ordered alone.",
   addedToCart: (name) => `Added ${name} to cart`,
   addToOrder: "Add to order",
@@ -382,6 +386,7 @@ const zh: Copy = {
   tsukemenDiffTitle: "★ 沾面与多闻沾面 —— 差别只在面条",
   tsukemenDiffBody:
     "普通沾面口感顺滑。多闻使用全麦面，更有嚼劲、风味更丰富。",
+  tsukemenIncludedToppings: ["笋干", "叉烧", "水菜"],
   toppingNote: "配料请与拉面一起点单，不可单点。",
   addedToCart: (name) => `已将 ${name} 加入购物车`,
   addToOrder: "加入订单",
@@ -501,6 +506,7 @@ const ko: Copy = {
   tsukemenDiffTitle: "★ 쓰케멘과 다몬 쓰케멘 — 면만 다릅니다",
   tsukemenDiffBody:
     "일반 쓰케멘은 부드럽고 매끄럽습니다. 다몬은 통밀면으로 더 쫄깃하고 풍미가 풍부합니다.",
+  tsukemenIncludedToppings: ["멘마", "차슈", "미즈나"],
   toppingNote: "토핑은 라멘과 함께 주문해 주세요. 단품 주문은 불가합니다.",
   addedToCart: (name) => `${name}을(를) 장바구니에 담았습니다`,
   addToOrder: "주문에 추가",

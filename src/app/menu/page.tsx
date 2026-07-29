@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from "react";
-import { CheckCircle2, Images, Sparkles } from "lucide-react";
+import { CheckCircle2, Images, Leaf, Sparkles } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { menuItems, categories } from "@/lib/menu-data";
 import type { MenuItem } from "@/lib/types";
@@ -479,10 +479,27 @@ function MenuContent() {
                       </div>
                     )}
                     <section>
-                      <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-2xl border border-emerald-200 border-l-4 border-r-4 border-l-emerald-200 border-r-emerald-200 bg-emerald-50/80 py-2 pl-3 pr-4 sm:mb-4">
-                        <h2 className="text-base font-bold tracking-tight text-emerald-900 sm:text-lg">
-                          {section.label}
-                        </h2>
+                      <div className="mb-3 sm:mb-4">
+                        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                          <div className="inline-flex w-fit items-center gap-2 rounded-2xl border border-emerald-200 border-l-4 border-r-4 border-l-emerald-200 border-r-emerald-200 bg-emerald-50/80 py-2 pl-3 pr-4">
+                            <h2 className="text-base font-bold tracking-tight text-emerald-900 sm:text-lg">
+                              {section.label}
+                            </h2>
+                          </div>
+                          {(section.id === "tsukemen" ||
+                            section.id === "tamon_tsukemen") && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-gradient-to-b from-amber-50 to-orange-50/90 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-amber-900/90 shadow-[0_1px_0_rgba(180,83,9,0.08)] sm:px-3 sm:text-[11px]">
+                              <Leaf
+                                className="size-3 shrink-0 text-amber-700/80 sm:size-3.5"
+                                strokeWidth={2.25}
+                                aria-hidden
+                              />
+                              {t.tsukemenIncludedToppings.join(
+                                locale === "en" ? ", " : "、"
+                              )}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {section.id === "topping" && (
                         <p className="mb-2 text-xs text-gray-600">
