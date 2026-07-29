@@ -191,7 +191,7 @@ export default function HomePage() {
                   🍜
                 </div>
                 <div className="min-w-0 text-xs">
-                  <p className="truncate font-semibold text-gray-800">QR Menu Ramen</p>
+                  <p className="truncate font-semibold text-gray-800">QR Menu</p>
                   <p className="line-clamp-2 text-[11px] leading-snug text-gray-600 sm:line-clamp-1 sm:truncate">
                     {t.brandTagline}
                   </p>
