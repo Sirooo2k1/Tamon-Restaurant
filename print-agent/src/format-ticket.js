@@ -73,6 +73,12 @@ function padRight(text, width) {
   return t + " ".repeat(Math.max(0, width - displayWidth(t)));
 }
 
+/** Pad without truncating — text must already fit `width`. */
+function padRightFull(text, width) {
+  const t = String(text ?? "");
+  return t + " ".repeat(Math.max(0, width - displayWidth(t)));
+}
+
 function priceCell(vnd) {
   const s = yen(vnd);
   return " ".repeat(Math.max(0, PRICE_W - displayWidth(s))) + s;
@@ -80,6 +86,86 @@ function priceCell(vnd) {
 
 function namePrice(name, vnd) {
   return padRight(name, NAME_W) + priceCell(vnd);
+}
+
+/**
+ * Xuống dòng theo độ rộng in (full-width = 2).
+ * Ưu tiên ngắt sau ・／、()（） khoảng trắng.
+ */
+function wrapDisplayLines(text, maxWidth) {
+  const src = String(text ?? "");
+  if (!src) return [];
+  if (maxWidth < 2) return [fit(src, Math.max(1, maxWidth))];
+
+  const breakAfter = new Set(["・", "／", "/", "、", " ", "）", ")", "·", "ｰ", "-"]);
+  const out = [];
+  let line = "";
+
+  for (const ch of src) {
+    const next = line + ch;
+    if (displayWidth(next) <= maxWidth) {
+      line = next;
+      continue;
+    }
+
+    // Tìm điểm ngắt đẹp gần cuối dòng hiện tại
+    let breakAt = -1;
+    for (let i = line.length - 1; i >= Math.max(0, line.length - 12); i--) {
+      if (breakAfter.has(line[i])) {
+        breakAt = i + 1;
+        break;
+      }
+    }
+
+    if (breakAt > 0) {
+      out.push(line.slice(0, breakAt));
+      line = line.slice(breakAt) + ch;
+    } else if (line) {
+      out.push(line);
+      line = ch;
+    } else {
+      out.push(fit(ch, maxWidth));
+      line = "";
+    }
+
+    while (displayWidth(line) > maxWidth) {
+      out.push(fit(line, maxWidth));
+      // phần còn lại sau fit — lấy lại từ line gốc
+      let kept = fit(line, maxWidth);
+      line = line.slice(kept.length);
+    }
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/** Dòng tên + giá; tên dài → xuống dòng, giá ở dòng đầu, cột giá giữ nguyên. */
+function pushNamePriceWrapped(lines, name, vnd, { bold = false } = {}) {
+  const wrapped = wrapDisplayLines(name, NAME_W);
+  if (!wrapped.length) return;
+  lines.push({
+    text: padRightFull(wrapped[0], NAME_W) + priceCell(vnd),
+    bold,
+    align: "center",
+  });
+  for (let i = 1; i < wrapped.length; i++) {
+    lines.push({
+      text: padRightFull(wrapped[i], COLS),
+      bold,
+      align: "center",
+    });
+  }
+}
+
+function pushTextWrapped(lines, text, { bold = false } = {}) {
+  const wrapped = wrapDisplayLines(text, COLS);
+  for (const w of wrapped) {
+    lines.push({
+      text: padRightFull(w, COLS),
+      bold,
+      align: "center",
+    });
+  }
 }
 
 function nameOnly(name) {
@@ -129,7 +215,57 @@ function toppingSumVnd(c) {
   return (c?.extraToppings ?? []).reduce((s, t) => s + (Number(t.price) || 0), 0);
 }
 
-function splitDetails(c) {
+/** Bỏ danh sách lựa chọn trong ngoặc của tên menu catalog: 「ビアボール (レモン・うめ・メロン)」→「ビアボール」 */
+function stripCatalogOptionList(name) {
+  const s = String(name ?? "").trim();
+  const stripped = s.replace(/\s*[\(（][^）)]+[\)）]\s*$/u, "").trim();
+  return stripped || s;
+}
+
+/** Bỏ phần lựa chọn lượng mì trên tên catalog: 「つけ麺 150g・200g」→「つけ麺」 */
+function stripCatalogPortionChoice(name) {
+  return String(name ?? "")
+    .replace(/\s*150\s*g\s*[・･·]\s*200\s*g/giu, "")
+    .replace(/\s*500\s*g\s*以上/giu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function formatPortionSuffix(grams) {
+  if (!grams) return null;
+  if (grams === "500+") return "500g以上";
+  return `${grams}g`;
+}
+
+/**
+ * Tên in bếp = đúng món khách chọn (không in tên catalog dài + dòng・lựa chọn bên dưới).
+ * vd. ハイボール レモン / つけ麺 150g / ビアボール うめ
+ */
+function resolvePrintItemName(item) {
+  const c = item?.customization;
+  if (c?.highballVariant && HIGHBALL[c.highballVariant]) {
+    return HIGHBALL[c.highballVariant];
+  }
+  if (c?.beerBallVariant && BEER_BALL[c.beerBallVariant]) {
+    return `ビアボール ${BEER_BALL[c.beerBallVariant]}`;
+  }
+  if (c?.beerVariant && BEER[c.beerVariant]) {
+    return `瓶ビール ${BEER[c.beerVariant]}`;
+  }
+
+  let base = stripCatalogOptionList(item?.menu_item_name || item?.menu_item_id || "メニュー");
+  base = stripCatalogPortionChoice(base);
+
+  const portion = formatPortionSuffix(c?.noodlePortionGrams);
+  if (portion) {
+    // Tránh「つけ麺 300g 150g」nếu tên đã sẵn gram cố định trùng — vẫn ưu tiên lựa chọn khách
+    base = base.replace(/\s*\d{3,4}\s*g\s*$/iu, "").trim();
+    return `${base} ${portion}`;
+  }
+  return base;
+}
+
+function splitDetails(c, { omitDrinkVariant = false, omitPortion = false } = {}) {
   /** @type {{ label: string, priceVnd: number }[]} */
   const toppings = [];
   /** @type {string[]} */
@@ -140,7 +276,8 @@ function splitDetails(c) {
   if (c.serviceMode === "takeaway") notes.push("お持ち帰り");
   else if (c.serviceMode === "dine_in") notes.push("店内");
 
-  if (c.noodlePortionGrams) {
+  // 麺量 đã gộp vào tên món — không in dòng「・麺量150g」
+  if (!omitPortion && c.noodlePortionGrams) {
     notes.push(
       c.noodlePortionGrams === "500+" ? "麺量500g+" : `麺量${c.noodlePortionGrams}g`
     );
@@ -149,12 +286,15 @@ function splitDetails(c) {
   if (c.spiceLevel && c.spiceLevel !== "none" && SPICE[c.spiceLevel]) {
     notes.push(SPICE[c.spiceLevel]);
   }
-  if (c.beerVariant && BEER[c.beerVariant]) notes.push(BEER[c.beerVariant]);
-  if (c.highballVariant && HIGHBALL[c.highballVariant]) {
-    notes.push(HIGHBALL[c.highballVariant]);
-  }
-  if (c.beerBallVariant && BEER_BALL[c.beerBallVariant]) {
-    notes.push(`ビアボール ${BEER_BALL[c.beerBallVariant]}`);
+  // Variant đồ uống đã gộp vào tên món chính — không lặp ở dòng・
+  if (!omitDrinkVariant) {
+    if (c.beerVariant && BEER[c.beerVariant]) notes.push(BEER[c.beerVariant]);
+    if (c.highballVariant && HIGHBALL[c.highballVariant]) {
+      notes.push(HIGHBALL[c.highballVariant]);
+    }
+    if (c.beerBallVariant && BEER_BALL[c.beerBallVariant]) {
+      notes.push(`ビアボール ${BEER_BALL[c.beerBallVariant]}`);
+    }
   }
 
   for (const t of c.extraToppings ?? []) {
@@ -187,31 +327,32 @@ function orderTotal(order, items) {
 function pushItemBlock(lines, items, startIndex = 0) {
   const detailPad = "  ";
   items.forEach((item, i) => {
-    const name = item.menu_item_name || item.menu_item_id || "メニュー";
+    const c = item.customization;
+    const name = resolvePrintItemName(item);
     const qty = Number(item.quantity) || 1;
     const unit = Number(item.unit_price || 0);
-    const extras = toppingSumVnd(item.customization);
+    const extras = toppingSumVnd(c);
     const baseUnit = Math.max(0, unit - extras);
-    const { toppings, notes } = splitDetails(item.customization);
+    const omitDrinkVariant = Boolean(
+      c?.beerVariant || c?.highballVariant || c?.beerBallVariant
+    );
+    const omitPortion = Boolean(c?.noodlePortionGrams);
+    const { toppings, notes } = splitDetails(c, { omitDrinkVariant, omitPortion });
     const n = startIndex + i + 1;
 
-    lines.push({
-      text: namePrice(`${n}.${name} x${qty}`, baseUnit * qty),
+    pushNamePriceWrapped(lines, `${n}.${name} x${qty}`, baseUnit * qty, {
       bold: true,
-      align: "center",
     });
 
     for (const t of toppings) {
-      lines.push({
-        text: namePrice(`${detailPad}${DOT}${t.label}`, t.priceVnd * qty),
-        align: "center",
-      });
+      pushNamePriceWrapped(
+        lines,
+        `${detailPad}${DOT}${t.label}`,
+        t.priceVnd * qty
+      );
     }
     for (const note of notes) {
-      lines.push({
-        text: padRight(`${detailPad}${DOT}${note}`, COLS),
-        align: "center",
-      });
+      pushTextWrapped(lines, `${detailPad}${DOT}${note}`);
     }
   });
 }

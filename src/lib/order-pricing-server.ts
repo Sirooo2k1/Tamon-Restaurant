@@ -80,7 +80,14 @@ function sanitizeCustomization(
     if (c.noodlePortionGrams !== "600" && c.noodlePortionGrams !== "700") {
       return { ok: false, error: "麺量を選択してください" };
     }
+  } else {
+    // Món không chọn lượng mì — bỏ field để phiếu in không gắn nhầm「150g」
+    delete c.noodlePortionGrams;
   }
+
+  // UI hiện tại không gửi firmness/spice structured — bỏ để tránh ghi chú thừa trên phiếu
+  delete c.noodleFirmness;
+  delete c.spiceLevel;
 
   if (typeof c.note === "string") {
     c.note = c.note.trim().slice(0, 200);
@@ -96,7 +103,12 @@ function sanitizeCustomization(
     delete c.seatLabel;
   }
 
-  if (c.serviceMode !== "dine_in" && c.serviceMode !== "takeaway") {
+  if (menu.category === "gyoza") {
+    if (c.serviceMode !== "dine_in" && c.serviceMode !== "takeaway") {
+      // Mặc định店内 nếu thiếu (tránh chặn đơn cũ / edge)
+      c.serviceMode = "dine_in";
+    }
+  } else {
     delete c.serviceMode;
   }
 
