@@ -265,13 +265,17 @@ function resolvePrintItemName(item) {
   return base;
 }
 
+const NOODLE_TEMP = new Set(["冷たい麺", "温かい麺"]);
+
 function splitDetails(c, { omitDrinkVariant = false, omitPortion = false } = {}) {
   /** @type {{ label: string, priceVnd: number }[]} */
   const toppings = [];
   /** @type {string[]} */
   const notes = [];
+  /** @type {string | null} */
+  let noodleTemp = null;
 
-  if (!c || typeof c !== "object") return { toppings, notes };
+  if (!c || typeof c !== "object") return { toppings, notes, noodleTemp };
 
   if (c.serviceMode === "takeaway") notes.push("お持ち帰り");
   else if (c.serviceMode === "dine_in") notes.push("店内");
@@ -307,12 +311,17 @@ function splitDetails(c, { omitDrinkVariant = false, omitPortion = false } = {})
 
   if (c.note?.trim()) {
     for (const part of c.note.split(/[｜|、]/).map((s) => s.trim()).filter(Boolean)) {
+      // 冷/温 — tách riêng, in đậm ngay dưới tên món
+      if (NOODLE_TEMP.has(part)) {
+        noodleTemp = part;
+        continue;
+      }
       notes.push(part);
     }
   }
   if (c.seatLabel?.trim()) notes.push(`席${c.seatLabel.trim()}`);
 
-  return { toppings, notes };
+  return { toppings, notes, noodleTemp };
 }
 
 function orderTotal(order, items) {
@@ -337,12 +346,24 @@ function pushItemBlock(lines, items, startIndex = 0) {
       c?.beerVariant || c?.highballVariant || c?.beerBallVariant
     );
     const omitPortion = Boolean(c?.noodlePortionGrams);
-    const { toppings, notes } = splitDetails(c, { omitDrinkVariant, omitPortion });
+    const { toppings, notes, noodleTemp } = splitDetails(c, {
+      omitDrinkVariant,
+      omitPortion,
+    });
     const n = startIndex + i + 1;
 
     pushNamePriceWrapped(lines, `${n}.${name} x${qty}`, baseUnit * qty, {
       bold: true,
     });
+
+    // 冷たい麺 / 温かい麺 — ngay dưới tên món, đậm, trước topping
+    if (noodleTemp) {
+      lines.push({
+        text: padRightFull(`${detailPad}${DOT}${noodleTemp}`, COLS),
+        bold: true,
+        align: "center",
+      });
+    }
 
     for (const t of toppings) {
       pushNamePriceWrapped(
