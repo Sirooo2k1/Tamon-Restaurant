@@ -37,8 +37,8 @@ const copyByLang: Record<
 > = {
   en: {
     heroTag: "The Future of Dining",
-    heroTitleLine1: "Digitize Your Menu.",
-    heroTitleLine2: "Boost Sales.",
+    heroTitleLine1: "Digital Menu",
+    heroTitleLine2: "",
     heroSub:
       "A modern QR ordering system that turns tables faster, lightens staff workload, and delivers a smooth ordering experience on any device.",
     brandTagline: "Digital menu for modern restaurants",
@@ -65,8 +65,8 @@ const copyByLang: Record<
   },
   ja: {
     heroTag: "新しい飲食体験へ",
-    heroTitleLine1: "メニューをデジタル化。",
-    heroTitleLine2: "売上アップへ。",
+    heroTitleLine1: "デジタルメニュー",
+    heroTitleLine2: "",
     heroSub:
       "QR オーダーで回転率を上げつつ、スタッフの負担を軽減し、どのデバイスからでも快適に注文できる体験を提供します。",
     brandTagline: "現代の飲食店のためのデジタルメニュー",
@@ -93,8 +93,8 @@ const copyByLang: Record<
   },
   zh: {
     heroTag: "餐饮数字化新体验",
-    heroTitleLine1: "让菜单全面数字化，",
-    heroTitleLine2: "轻松提升营收。",
+    heroTitleLine1: "数字化菜单",
+    heroTitleLine2: "",
     heroSub:
       "现代化的 QR 点餐系统，加快翻台速度，减轻员工负担，并在任何设备上提供流畅的点餐体验。",
     brandTagline: "为现代餐厅打造的数字菜单",
@@ -120,8 +120,8 @@ const copyByLang: Record<
   },
   ko: {
     heroTag: "새로운 다이닝 경험",
-    heroTitleLine1: "메뉴를 디지털로 전환하고,",
-    heroTitleLine2: "매출을 끌어올리세요.",
+    heroTitleLine1: "디지털 메뉴",
+    heroTitleLine2: "",
     heroSub:
       "현대적인 QR 주문 시스템으로 테이블 회전율을 높이고, 직원 부담을 줄이며, 어떤 기기에서도 매끄러운 주문 경험을 제공합니다.",
     brandTagline: "현대적인 레스토랑을 위한 디지털 메뉴",
@@ -148,8 +148,8 @@ const copyByLang: Record<
   },
   vi: {
     heroTag: "Trải nghiệm gọi món mới",
-    heroTitleLine1: "Số hoá menu của bạn,",
-    heroTitleLine2: "tăng trưởng doanh thu.",
+    heroTitleLine1: "Menu kỹ thuật số",
+    heroTitleLine2: "",
     heroSub:
       "Hệ thống gọi món qua QR hiện đại: tăng vòng quay bàn, giảm tải cho nhân viên và mang lại trải nghiệm mượt mà trên mọi thiết bị.",
     brandTagline: "Menu điện tử cho nhà hàng hiện đại",
@@ -252,9 +252,11 @@ export default function HomePage() {
             </div>
             <h1 className="text-balance text-3xl font-semibold leading-tight text-gray-800 sm:text-4xl md:text-5xl">
               <span className="block">{t.heroTitleLine1}</span>
-              <span className="block bg-gradient-to-r from-emerald-500 to-amber-500 bg-clip-text text-transparent">
-                {t.heroTitleLine2}
-              </span>
+              {t.heroTitleLine2 ? (
+                <span className="block bg-gradient-to-r from-emerald-500 to-amber-500 bg-clip-text text-transparent">
+                  {t.heroTitleLine2}
+                </span>
+              ) : null}
             </h1>
             <p className="max-w-md text-sm text-gray-600 sm:text-[15px]">
               {t.heroSub}
