@@ -613,7 +613,7 @@ function OrdersPageInner() {
     <main className="app-shell flex min-h-screen bg-[#FAF8F0] text-gray-800">
       {customerPrintOrder && (
         <div className="customer-print-root" aria-hidden>
-          <CustomerPaymentReceipt order={customerPrintOrder} />
+          <CustomerPaymentReceipt order={customerPrintOrder} locale="ja" />
         </div>
       )}
       <KitchenDesktopAside

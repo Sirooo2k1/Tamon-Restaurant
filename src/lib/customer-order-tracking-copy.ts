@@ -475,3 +475,120 @@ export function formatCustomerTime(iso: string, locale: CustomerLocale): string 
     minute: "2-digit",
   });
 }
+
+export function formatCustomerDateTime(iso: string, locale: CustomerLocale): string {
+  const tag =
+    locale === "en" ? "en-US" : locale === "zh" ? "zh-CN" : locale === "ko" ? "ko-KR" : "ja-JP";
+  return new Date(iso).toLocaleString(tag, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export type PaymentReceiptCopy = {
+  storeName: string;
+  title: string;
+  thanks: string;
+  received: string;
+  slipNo: string;
+  seat: string;
+  orderedAt: string;
+  paidAt: string;
+  payment: string;
+  paid: string;
+  unpaid: string;
+  details: string;
+  total: string;
+  taxNote: string;
+  seeYouAgain: string;
+  printed: string;
+};
+
+const receiptJa: PaymentReceiptCopy = {
+  storeName: "自家製麺 多聞",
+  title: "お会計のご案内（お客様控え）",
+  thanks: "本日はご来店ありがとうございました。",
+  received: "以下の内容にてお会計を承りました。",
+  slipNo: "伝票番号",
+  seat: "お席",
+  orderedAt: "ご注文日時",
+  paidAt: "お会計日時",
+  payment: "お支払い",
+  paid: "お支払い済",
+  unpaid: "未会計（参考）",
+  details: "明細",
+  total: "お支払い合計",
+  taxNote:
+    "※価格はシステム表示（税込参考）です。領収書の要望があればスタッフまでお声がけください。",
+  seeYouAgain: "またのご来店をお待ちしております",
+  printed: "Printed",
+};
+
+const receiptEn: PaymentReceiptCopy = {
+  storeName: "自家製麺 多聞",
+  title: "Payment receipt (customer copy)",
+  thanks: "Thank you for visiting today.",
+  received: "We have received payment for the following.",
+  slipNo: "Order no.",
+  seat: "Table",
+  orderedAt: "Ordered at",
+  paidAt: "Paid at",
+  payment: "Payment",
+  paid: "Paid",
+  unpaid: "Unpaid (preview)",
+  details: "Items",
+  total: "Total",
+  taxNote:
+    "※Prices are system totals (tax-included reference). Ask staff if you need a formal receipt.",
+  seeYouAgain: "We look forward to seeing you again",
+  printed: "Printed",
+};
+
+const receiptZh: PaymentReceiptCopy = {
+  storeName: "自家製麺 多聞",
+  title: "结账凭证（顾客联）",
+  thanks: "感谢您今日光临。",
+  received: "已按以下内容完成结账。",
+  slipNo: "单据号",
+  seat: "座位",
+  orderedAt: "下单时间",
+  paidAt: "结账时间",
+  payment: "支付",
+  paid: "已支付",
+  unpaid: "未结账（参考）",
+  details: "明细",
+  total: "应付合计",
+  taxNote: "※价格为系统显示（含税参考）。如需正式收据请告知店员。",
+  seeYouAgain: "欢迎再次光临",
+  printed: "Printed",
+};
+
+const receiptKo: PaymentReceiptCopy = {
+  storeName: "自家製麺 多聞",
+  title: "결제 안내（고객용）",
+  thanks: "오늘 방문해 주셔서 감사합니다.",
+  received: "아래 내용으로 결제가 완료되었습니다.",
+  slipNo: "전표 번호",
+  seat: "테이블",
+  orderedAt: "주문 시각",
+  paidAt: "결제 시각",
+  payment: "결제",
+  paid: "결제 완료",
+  unpaid: "미결제（참고）",
+  details: "내역",
+  total: "결제 합계",
+  taxNote:
+    "※가격은 시스템 표시（세금 포함 참고）입니다. 정식 영수증이 필요하면 직원에게 말씀해 주세요.",
+  seeYouAgain: "다시 뵙기를 기다리겠습니다",
+  printed: "Printed",
+};
+
+export function paymentReceiptCopy(locale: CustomerLocale): PaymentReceiptCopy {
+  if (locale === "en") return receiptEn;
+  if (locale === "zh") return receiptZh;
+  if (locale === "ko") return receiptKo;
+  return receiptJa;
+}
