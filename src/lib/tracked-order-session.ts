@@ -12,7 +12,7 @@ export const TRACKED_ORDER_SECRET_COOKIE = "remenshop_track_sec";
  * Cookie の最長保持（未会計のまま放置した場合）。
  * 会計済みになった注文はクライアント側で追跡 cookie を直ちに削除する（`recent-order-tracking`）。
  */
-export const TRACKED_ORDER_MAX_AGE_SEC = 60 * 90;
+export const TRACKED_ORDER_MAX_AGE_SEC = 60 * 120;
 
 export type TrackedOrderCookieAttributes = {
   httpOnly: boolean;
