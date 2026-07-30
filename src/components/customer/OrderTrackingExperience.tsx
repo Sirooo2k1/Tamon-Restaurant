@@ -28,7 +28,6 @@ import { cn } from "@/lib/utils";
 import { CUSTOMER_HERO_GRADIENT, customerHeroShellClassName } from "@/lib/customer-hero-gradient";
 import { clearTrackedOrderOnServer } from "@/lib/recent-order-tracking";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
-import { displayMenuItemNameJa } from "@/lib/menu-display";
 import {
   formatGyozaServiceModePartsJa,
   lineTotalWithGyozaFeesVnd,
@@ -41,6 +40,14 @@ import {
   shouldTreatOrderPageAsStaleAfterCheckout,
 } from "@/lib/menu-table-session";
 import { useCartStore } from "@/store/cart-store";
+import { useCustomerLocale, type CustomerLocale } from "@/store/customer-locale-store";
+import {
+  formatCustomerTime,
+  orderTrackingCopy,
+  type OrderTrackingCopy,
+} from "@/lib/customer-order-tracking-copy";
+import { menuItems } from "@/lib/menu-data";
+import { menuItemDisplayName } from "@/lib/customer-menu-label";
 import { GuestAccessReceiptPreview } from "@/components/customer/GuestAccessReceiptPreview";
 import { CustomerPaymentReceipt } from "@/components/kitchen/CustomerPaymentReceipt";
 
@@ -68,13 +75,6 @@ function stripGuestKeyFromUrl(): void {
 
 const toYen = (vnd: number) => Math.round(vnd / 200);
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("ja-JP", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 /** Customer-facing phase index 0–4 (cancelled = -1) */
 function statusToPhase(status: OrderStatus): number {
   switch (status) {
@@ -96,56 +96,38 @@ function statusToPhase(status: OrderStatus): number {
   }
 }
 
-const STATUS_COPY: Record<
-  OrderStatus,
-  { headline: string; detail: string }
-> = {
-  pending: {
-    headline: "キッチンに届けました",
-    detail: "ご注文を受け付けました。順番にご準備いたします。",
-  },
-  confirmed: {
-    headline: "内容を確認しました",
-    detail: "もうすぐ準備に入ります。少々お待ちください。",
-  },
-  preparing: {
-    headline: "丁寧に準備中です",
-    detail: "仕上がり次第、ステータスが更新されます。",
-  },
-  ready: {
-    headline: "提供の準備ができました",
-    detail: "スタッフがお席へお持ちします。",
-  },
-  served: {
-    headline: "お席へお届け済みです",
-    detail: "お支払いは商品お受け取り時、またはレジにてお願いします。",
-  },
-  paid: {
-    headline: "ありがとうございました",
-    detail: "本日のご来店ありがとうございました。またのお越しをお待ちしています。",
-  },
-  cancelled: {
-    headline: "ご注文はキャンセルされました",
-    detail: "ご不明点があればスタッフまでお声がけください。",
-  },
-};
-
-const STEPS: {
-  label: string;
-  short: string;
-  Icon: typeof Inbox;
-}[] = [
-  { label: "受付・確認", short: "受付", Icon: Inbox },
-  { label: "準備中", short: "準備", Icon: ChefHat },
-  { label: "提供準備", short: "提供待ち", Icon: Bell },
-  { label: "お届け", short: "届済", Icon: Truck },
-  { label: "会計完了", short: "完了", Icon: CheckCircle2 },
-];
+const STEP_ICONS = [Inbox, ChefHat, Bell, Truck, CheckCircle2] as const;
 
 const POLL_MS = 3000;
 
+function TitleLines({ text }: { text: string }) {
+  const parts = text.split("\n");
+  return (
+    <>
+      {parts.map((line, i) => (
+        <span key={i}>
+          {i > 0 && <br />}
+          {line}
+        </span>
+      ))}
+    </>
+  );
+}
+
+function lineDisplayName(line: OrderItemPayload, locale: CustomerLocale) {
+  const item = menuItems.find((m) => m.id === line.menu_item_id);
+  if (item) return menuItemDisplayName(item, locale);
+  return line.menu_item_name;
+}
+
 /** チェックアウト直後のみ表示。会計済みになると親が paid 分岐で本ブロックを出さない */
-function PostCheckoutThankYouCard({ orderWasMerged }: { orderWasMerged?: boolean }) {
+function PostCheckoutThankYouCard({
+  orderWasMerged,
+  t,
+}: {
+  orderWasMerged?: boolean;
+  t: OrderTrackingCopy;
+}) {
   return (
     <section className="relative mb-5 w-full sm:mb-6">
       <div
@@ -173,28 +155,18 @@ function PostCheckoutThankYouCard({ orderWasMerged }: { orderWasMerged?: boolean
               </div>
             </div>
             <p className="mt-1 text-[10px] font-bold tracking-[0.16em] text-emerald-700/80">
-              ご注文を承りました
+              {t.thanksEyebrow}
             </p>
           </div>
 
           <h2 className="mx-auto mt-3 max-w-[26rem] text-center text-[1.05rem] font-bold leading-snug tracking-tight text-gray-900 sm:text-xl sm:leading-snug">
-            {orderWasMerged ? (
-              <>
-                ご注文に追加いたしました。
-                <br />
-                ありがとうございます。
-              </>
-            ) : (
-              <>
-                この度はご注文を賜り、
-                <br />
-                誠にありがとうございます。
-              </>
-            )}
+            <TitleLines
+              text={orderWasMerged ? t.thanksMergedTitle : t.thanksNewTitle}
+            />
           </h2>
           {orderWasMerged && (
             <p className="mx-auto mt-2 max-w-[24rem] text-center text-xs text-emerald-800/90">
-              既存の注文にカートの内容を加えました。合計は追跡画面でご確認ください。
+              {t.thanksMergedBody}
             </p>
           )}
           <div
@@ -208,7 +180,7 @@ function PostCheckoutThankYouCard({ orderWasMerged }: { orderWasMerged?: boolean
                 <ChefHat className="h-4 w-4 text-emerald-600 sm:h-[1.125rem] sm:w-[1.125rem]" strokeWidth={2} />
               </span>
               <p className="min-w-0 text-[0.8125rem] leading-snug text-gray-700 sm:text-sm sm:leading-snug">
-                ただいま料理人が一品一品、心を尽くしてご用意を進めております。
+                {t.thanksBullet1}
               </p>
             </li>
             <li className="flex gap-2.5 rounded-xl border border-emerald-100/60 bg-gradient-to-r from-emerald-50/50 to-white/60 px-3 py-2.5 sm:gap-3 sm:rounded-2xl sm:py-3">
@@ -216,7 +188,7 @@ function PostCheckoutThankYouCard({ orderWasMerged }: { orderWasMerged?: boolean
                 <ClipboardList className="h-4 w-4 text-emerald-600 sm:h-[1.125rem] sm:w-[1.125rem]" strokeWidth={2} />
               </span>
               <p className="min-w-0 text-[0.8125rem] leading-snug text-gray-700 sm:text-sm sm:leading-snug">
-                ご注文の進行状況につきましては、本画面にて随時ご確認いただけます。
+                {t.thanksBullet2}
               </p>
             </li>
             <li className="flex gap-2.5 rounded-xl border border-emerald-100/60 bg-gradient-to-r from-emerald-50/50 to-white/60 px-3 py-2.5 sm:gap-3 sm:rounded-2xl sm:py-3">
@@ -224,7 +196,7 @@ function PostCheckoutThankYouCard({ orderWasMerged }: { orderWasMerged?: boolean
                 <Sparkles className="h-4 w-4 text-emerald-600 sm:h-[1.125rem] sm:w-[1.125rem]" strokeWidth={2} />
               </span>
               <p className="min-w-0 text-[0.8125rem] leading-snug text-gray-700 sm:text-sm sm:leading-snug">
-                お料理が最良の状態でお手元に届きますよう、丁寧に仕上げてまいります。
+                {t.thanksBullet3}
               </p>
             </li>
             <li className="flex gap-2.5 rounded-xl border border-amber-100/70 bg-gradient-to-r from-amber-50/40 to-white/60 px-3 py-2.5 sm:gap-3 sm:rounded-2xl sm:py-3">
@@ -232,7 +204,7 @@ function PostCheckoutThankYouCard({ orderWasMerged }: { orderWasMerged?: boolean
                 <Coffee className="h-4 w-4 text-amber-700 sm:h-[1.125rem] sm:w-[1.125rem]" strokeWidth={2} />
               </span>
               <p className="min-w-0 text-[0.8125rem] leading-snug text-gray-700 sm:text-sm sm:leading-snug">
-                どうぞ、ひとときの時間もごゆっくりお楽しみくださいませ。
+                {t.thanksBullet4}
               </p>
             </li>
           </ul>
@@ -266,7 +238,8 @@ function OrderTrackingCard({
 
 async function fetchOrder(
   id: string,
-  guestKey?: string | null
+  guestKey?: string | null,
+  notFoundMessage = "この注文は見つかりませんでした。"
 ): Promise<
   | { ok: true; data: OrderRecord }
   | { ok: false; message: string; code?: string; httpStatus: number }
@@ -281,10 +254,11 @@ async function fetchOrder(
   if (res.ok) {
     return { ok: true, data: (await res.json()) as OrderRecord };
   }
-  let message = "この注文は見つかりませんでした。";
+  let message = notFoundMessage;
   let code: string | undefined;
   try {
     const j = (await res.json()) as { error?: string; code?: string };
+    // API lỗi vẫn là tiếng Nhật — giữ nếu có; không thì fallback bản dịch
     if (typeof j.error === "string" && j.error.trim()) message = j.error;
     if (typeof j.code === "string" && j.code.trim()) code = j.code.trim();
   } catch {
@@ -320,6 +294,8 @@ export function OrderTrackingExperience({
   postCheckoutThankYou = false,
   orderWasMerged = false,
 }: Props) {
+  const locale = useCustomerLocale();
+  const t = orderTrackingCopy(locale);
   const [order, setOrder] = useState<OrderRecord | null | undefined>(undefined);
   const [loadError, setLoadError] = useState<string | null>(null);
   /** 403 + guest cookie 不一致 — 文言をやわらかく見せる */
@@ -363,7 +339,11 @@ export function OrderTrackingExperience({
     const load = async () => {
       const useKey =
         Boolean(guestKeyFromQuery?.trim()) && !guestKeyConsumedRef.current;
-      const result = await fetchOrder(orderId, useKey ? guestKeyFromQuery : undefined);
+      const result = await fetchOrder(
+        orderId,
+        useKey ? guestKeyFromQuery : undefined,
+        t.notFound
+      );
       if (cancelled) return;
       if (!result.ok) {
         const snapOk =
@@ -412,7 +392,7 @@ export function OrderTrackingExperience({
       cancelled = true;
       if (interval !== undefined) clearInterval(interval);
     };
-  }, [orderId, guestKeyFromQuery]);
+  }, [orderId, guestKeyFromQuery, t.notFound]);
 
   const phase = order ? statusToPhase(order.status) : 0;
   const isCancelled = order?.status === "cancelled";
@@ -433,7 +413,8 @@ export function OrderTrackingExperience({
     onReplaceMenuNavigation?.(replaceMenu);
   }, [order, guestAccessHint, onReplaceMenuNavigation]);
 
-  const copy = order ? STATUS_COPY[order.status] : null;
+  const copy = order ? t.status[order.status] : null;
+  const steps = t.steps;
 
   const itemLines = useMemo(() => {
     if (!order?.items?.length) return [];
@@ -469,11 +450,11 @@ export function OrderTrackingExperience({
     return (
       <div className="mx-auto w-full max-w-lg px-4 py-6 sm:py-8">
         {postCheckoutThankYou && (
-          <PostCheckoutThankYouCard orderWasMerged={orderWasMerged} />
+          <PostCheckoutThankYouCard orderWasMerged={orderWasMerged} t={t} />
         )}
         <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3">
           <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
-          <p className="text-sm font-medium text-gray-600">お客様のご注文を読み込み中…</p>
+          <p className="text-sm font-medium text-gray-600">{t.loading}</p>
         </div>
       </div>
     );
@@ -493,18 +474,18 @@ export function OrderTrackingExperience({
   }
 
   if (loadError || !order) {
-    const errText = loadError ?? "読み込みに失敗しました。";
+    const errText = loadError ?? t.loadFailed;
     return (
       <div className="mx-auto max-w-md px-4 py-12">
         {guestAccessHint ? (
           <div className="rounded-2xl border border-emerald-100/90 bg-gradient-to-br from-emerald-50/90 via-white to-amber-50/40 px-5 py-7 text-center shadow-[0_12px_40px_-24px_rgba(16,185,129,0.22)]">
             <p className="text-lg font-bold leading-snug tracking-tight text-emerald-950">
-              本日はご来店ありがとうございました
+              {t.thanksVisit}
             </p>
             <p className="mt-3 text-[13px] leading-relaxed text-gray-700">
-              お会計までお済ませいただき、誠にありがとうございました。
+              {t.thanksPaid}
               <br />
-              またのご来店を、心よりお待ちしております。
+              {t.thanksAgain}
             </p>
             <GuestAccessReceiptPreview orderId={orderId} />
           </div>
@@ -518,7 +499,7 @@ export function OrderTrackingExperience({
               replace
               className="inline-flex rounded-2xl border border-emerald-100/90 bg-emerald-50/90 px-6 py-3 text-sm font-semibold text-emerald-900 shadow-sm ring-1 ring-emerald-50/85 transition hover:bg-emerald-100/95"
             >
-              メニューへ
+              {t.toMenu}
             </Link>
           </div>
         )}
@@ -528,7 +509,9 @@ export function OrderTrackingExperience({
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-6 sm:py-8">
-      {postCheckoutThankYou && <PostCheckoutThankYouCard orderWasMerged={orderWasMerged} />}
+      {postCheckoutThankYou && (
+        <PostCheckoutThankYouCard orderWasMerged={orderWasMerged} t={t} />
+      )}
       {/* Hero — layered depth, refined JP typography */}
       <OrderTrackingCard innerClassName="px-5 pb-5 pt-6 sm:px-6 sm:pt-7">
         {(isCancelled || !isPaid) && (
@@ -536,19 +519,19 @@ export function OrderTrackingExperience({
             <div className="flex items-center justify-between gap-3">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-white/85 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-800 shadow-[0_1px_2px_rgba(6,95,70,0.06)] backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5 text-amber-500" aria-hidden />
-                ご注文の状況
+                {t.statusBadge}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100/90 bg-emerald-50/60 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-emerald-800/90">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300/40" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_2px_rgba(209,250,229,0.85)]" />
                 </span>
-                自動更新
+                {t.liveUpdate}
               </span>
             </div>
 
             <h1 className="mt-5 text-2xl font-bold leading-snug tracking-tight text-gray-900 sm:text-[1.7rem]">
-              {isCancelled ? "ご案内" : "ご注文の準備状況"}
+              {isCancelled ? t.notice : t.title}
             </h1>
           </>
         )}
@@ -561,7 +544,7 @@ export function OrderTrackingExperience({
         >
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">
-              注文番号
+              {t.orderNo}
             </p>
             <p className="mt-0.5 font-mono text-lg font-bold tabular-nums tracking-tight text-emerald-900">
               #{order.id.slice(0, 8).toUpperCase()}
@@ -570,7 +553,7 @@ export function OrderTrackingExperience({
           <div className="hidden h-10 w-px bg-gradient-to-b from-transparent via-gray-200 to-transparent sm:block" />
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-500">
-              お席
+              {t.seat}
             </p>
             <p className="mt-0.5 text-base font-semibold text-gray-900">
               {order.table_label?.trim() || "—"}
@@ -584,13 +567,13 @@ export function OrderTrackingExperience({
             <p className="mt-1.5 text-[13px] leading-relaxed text-gray-600">{copy.detail}</p>
             {partialNoodle && !isPaid && (
               <p className="mt-3 border-t border-emerald-100/60 pt-3 text-[12px] leading-relaxed text-emerald-900/85">
-                <span className="font-semibold text-emerald-950">麺類について</span>
+                <span className="font-semibold text-emerald-950">{t.noodlePartialTitle}</span>
                 <br />
-                お届け済みの麺と、これからお届けする麺が混在しています。
-                <strong className="text-emerald-950"> 進捗バー</strong>
-                は店舗でのご注文全体の段階、
-                <strong className="text-emerald-950"> 「麺類のお届け」</strong>
-                と一覧で品目ごとの状況をご確認ください。
+                {t.noodlePartialBodyBefore}{" "}
+                <strong className="text-emerald-950">{t.noodlePartialBodyBar}</strong>
+                {t.noodlePartialBodyMid}
+                <strong className="text-emerald-950">{t.noodlePartialBodyNoodle}</strong>
+                {t.noodlePartialBodyAfter}
               </p>
             )}
           </div>
@@ -613,7 +596,7 @@ export function OrderTrackingExperience({
               aria-hidden
             />
             <p className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-800/75">
-              進捗
+              {t.progress}
             </p>
             <span
               className="h-px w-10 rounded-full bg-gradient-to-l from-transparent via-emerald-100/90 to-teal-200/75 shadow-[0_0_14px_-2px_rgba(167,243,208,0.14)]"
@@ -621,24 +604,22 @@ export function OrderTrackingExperience({
             />
           </div>
           <p className="mb-3 text-center text-[10px] leading-relaxed text-gray-500">
-            店舗でのご注文全体の処理の流れです。
-            {hasNonNoodleItems
-              ? " ドリンク・サイド等のお届けは一覧の品目ごとの表示をご確認ください。"
-              : ""}
+            {t.progressHint}
+            {hasNonNoodleItems ? ` ${t.progressHintSides}` : ""}
           </p>
           {noodleDelivery.total > 0 && hasPendingNoodles && !isPaid && (
             <p className="mb-3 text-center text-[10px] leading-relaxed text-emerald-800/85">
-              麺類（つけ麺・多聞つけ麺・ラーメン・替え玉等）のお届け状況は、下の「麺類のお届け」をご覧ください。
+              {t.noodleHintBelow}
             </p>
           )}
           <div className="relative flex justify-between gap-0 sm:gap-1">
-            {STEPS.map((step, i) => {
-              const done = phase > i || (phase === STEPS.length - 1 && i === STEPS.length - 1);
-              const current = phase === i && !(phase === STEPS.length - 1 && i === STEPS.length - 1);
-              const Icon = step.Icon;
+            {steps.map((step, i) => {
+              const done = phase > i || (phase === steps.length - 1 && i === steps.length - 1);
+              const current = phase === i && !(phase === steps.length - 1 && i === steps.length - 1);
+              const Icon = STEP_ICONS[i] ?? Inbox;
               return (
-                <div key={step.label} className="relative flex flex-1 flex-col items-center">
-                  {i < STEPS.length - 1 && (
+                <div key={`${step.label}-${i}`} className="relative flex flex-1 flex-col items-center">
+                  {i < steps.length - 1 && (
                     <div
                       className={`absolute left-[50%] top-[18px] z-0 hidden h-[3px] w-full rounded-full sm:block ${
                         phase > i
@@ -678,7 +659,7 @@ export function OrderTrackingExperience({
           </div>
           {/* Mobile connector line approximation */}
           <div className="mt-3 flex justify-between px-4 sm:hidden">
-            {STEPS.slice(0, -1).map((_, i) => (
+            {steps.slice(0, -1).map((_, i) => (
               <div
                 key={i}
                 className={`mx-0.5 h-1 flex-1 rounded-full ${
@@ -700,14 +681,14 @@ export function OrderTrackingExperience({
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800/80">
-                  麺類のお届け
+                  {t.noodleDelivery}
                 </p>
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-[13px] font-bold leading-snug tracking-tight text-emerald-950/95 sm:text-sm">
                   {noodleDelivery.delivered === noodleDelivery.total
-                    ? "お席へのお届け（麺類）"
+                    ? t.noodleAllDeliveredTitle
                     : noodleDelivery.delivered === 0
-                      ? "麺類のお届け状況"
-                      : "お届け状況（麺類・一部済み）"}
+                      ? t.noodleStatusTitle
+                      : t.noodlePartialStatusTitle}
                   <span className="inline-flex items-center rounded-full border border-emerald-100/80 bg-white px-2 py-0.5 text-[10px] font-mono font-semibold tabular-nums text-emerald-800 shadow-sm sm:text-[11px]">
                     {noodleDelivery.delivered}
                     <span className="mx-0.5 text-emerald-400/80">/</span>
@@ -716,10 +697,10 @@ export function OrderTrackingExperience({
                 </p>
                 <p className="mt-1.5 text-[11px] leading-relaxed text-emerald-900/60 sm:text-xs">
                   {noodleDelivery.delivered === noodleDelivery.total
-                    ? "ご注文の麺類はすべてお席にお届けしました。"
+                    ? t.noodleAllDeliveredBody
                     : noodleDelivery.delivered === 0
-                      ? "準備が整い次第お届けします。ドリンク等は一覧の各品表示をご確認ください。"
-                      : "お届け済みの麺と、これからお届けする麺が混在しています。一覧でもご確認ください。"}
+                      ? t.noodleNoneDeliveredBody
+                      : t.noodleSomeDeliveredBody}
                 </p>
               </div>
             </div>
@@ -732,9 +713,9 @@ export function OrderTrackingExperience({
         itemLines.length > 0 &&
         noodleDelivery.total === 0 && (
         <div className="relative mt-5 rounded-2xl border border-gray-200/90 bg-gray-50/80 px-4 py-3 text-[11px] leading-relaxed text-gray-600">
-          <span className="font-semibold text-gray-800">麺類のご注文がない場合</span>
+          <span className="font-semibold text-gray-800">{t.noNoodlesTitle}</span>
           <br />
-          上の進捗は店舗でのご注文全体の流れです。各商品のお届けは下の一覧でご確認ください。
+          {t.noNoodlesBody}
         </div>
       )}
 
@@ -747,15 +728,15 @@ export function OrderTrackingExperience({
             className="group flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left transition-colors hover:bg-white/55"
           >
             <div className="min-w-0">
-              <span className="text-sm font-bold tracking-tight text-gray-900">ご注文内容</span>
+              <span className="text-sm font-bold tracking-tight text-gray-900">{t.orderContents}</span>
               {noodleDelivery.total > 0 && (
                 <p className="mt-0.5 text-[11px] font-medium text-emerald-700/90">
-                  麺類 お届け {noodleDelivery.delivered}/{noodleDelivery.total}
+                  {t.noodleDeliveredCount(noodleDelivery.delivered, noodleDelivery.total)}
                 </p>
               )}
               {hasNonNoodleItems && (
                 <p className="mt-0.5 text-[10px] text-gray-500">
-                  全品のお届け状況は各行をご確認ください（麺以外も表示されます）
+                  {t.allItemsHint}
                 </p>
               )}
             </div>
@@ -792,7 +773,7 @@ export function OrderTrackingExperience({
                       <div className="min-w-0 flex-1 pl-1 sm:pl-1.5">
                         <div className="flex flex-wrap items-start justify-between gap-2 gap-y-1">
                           <p className="text-sm font-semibold leading-snug tracking-tight text-gray-900">
-                            {displayMenuItemNameJa(line.menu_item_id, line.menu_item_name)}
+                            {lineDisplayName(line, locale)}
                             <span className="ml-1 font-medium tabular-nums text-gray-500">×{line.quantity}</span>
                           </p>
                           {noodleLine && (
@@ -812,10 +793,10 @@ export function OrderTrackingExperience({
                         {delivered && (
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <span className="inline-flex items-center rounded-full border border-emerald-100/90 bg-white px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-800 shadow-sm sm:px-2.5 sm:text-[10px]">
-                              お届け済み
+                              {t.delivered}
                             </span>
                             <span className="text-[9px] font-medium text-emerald-700/75 sm:text-[10px]">
-                              お席に到着
+                              {t.arrivedAtTable}
                             </span>
                           </div>
                         )}
@@ -832,10 +813,10 @@ export function OrderTrackingExperience({
                         ) : (
                           <span
                             className="flex h-8 w-8 items-center justify-center rounded-full border-[1.5px] border-dashed border-emerald-300/80 bg-gradient-to-b from-white to-emerald-50/70 text-[11px] font-bold leading-none tracking-tight text-emerald-900/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] ring-1 ring-emerald-100/50 sm:h-9 sm:w-9 sm:text-xs"
-                            title="お席へ未お届け"
-                            aria-label="まだお席へお届けしていません"
+                            title={t.notDeliveredTitle}
+                            aria-label={t.notDeliveredAria}
                           >
-                            未
+                            {t.notDeliveredShort}
                           </span>
                         )}
                       </div>
@@ -846,9 +827,11 @@ export function OrderTrackingExperience({
             </ul>
           )}
           <p className="border-t border-emerald-100/35 bg-white/40 px-4 py-2.5 text-center text-[10px] leading-relaxed text-gray-500 backdrop-blur-[4px]">
-            <span className="tabular-nums">最終更新 {formatTime(order.updated_at)}</span>
+            <span className="tabular-nums">
+              {t.lastUpdated(formatCustomerTime(order.updated_at, locale))}
+            </span>
             <span className="mx-1.5 text-emerald-200/80">·</span>
-            この画面を開いたままでも最新に更新されます
+            {t.autoRefreshNote}
           </p>
         </OrderTrackingCard>
       )}
@@ -861,7 +844,7 @@ export function OrderTrackingExperience({
               className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50 via-white to-emerald-50/80 py-3.5 text-sm font-bold text-emerald-950 shadow-[0_10px_28px_-18px_rgba(16,185,129,0.14)] transition hover:border-emerald-300 hover:shadow-[0_14px_32px_-16px_rgba(16,185,129,0.12)] active:scale-[0.99]"
             >
               <RefreshCw className="h-4 w-4" aria-hidden />
-              追加で注文する
+              {t.orderMore}
             </Link>
           )}
           <Link
@@ -872,7 +855,7 @@ export function OrderTrackingExperience({
               !isPaid && "flex-1"
             )}
           >
-            ホームへ戻る
+            {t.backHome}
           </Link>
         </div>
       )}

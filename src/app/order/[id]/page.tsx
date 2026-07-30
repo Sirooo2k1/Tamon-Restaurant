@@ -8,12 +8,16 @@ import { OrderTrackingExperience } from "@/components/customer/OrderTrackingExpe
 import { CartDrawer } from "@/components/CartDrawer";
 import { useCartStore } from "@/store/cart-store";
 import { menuHrefForCustomerNavigation } from "@/lib/menu-table-session";
+import { useCustomerLocale } from "@/store/customer-locale-store";
+import { orderTrackingCopy } from "@/lib/customer-order-tracking-copy";
 
 function OrderTrackContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const [replaceMenuNav, setReplaceMenuNav] = useState(false);
   const tableLabel = useCartStore((s) => s.tableLabel);
+  const locale = useCustomerLocale();
+  const t = orderTrackingCopy(locale);
   const raw = params?.id;
   const orderId =
     typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : "";
@@ -28,7 +32,7 @@ function OrderTrackContent() {
             className="mb-4 inline-flex items-center gap-1 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
           >
             <ChevronLeft className="h-4 w-4" />
-            メニューに戻る
+            {t.backToMenu}
           </Link>
         </div>
       )}
@@ -41,7 +45,7 @@ function OrderTrackContent() {
         />
       ) : (
         <div className="px-4 py-20 text-center text-sm text-gray-600">
-          注文番号が指定されていません。
+          {t.orderIdMissing}
         </div>
       )}
     </>
@@ -49,6 +53,9 @@ function OrderTrackContent() {
 }
 
 export default function OrderTrackPage() {
+  const locale = useCustomerLocale();
+  const t = orderTrackingCopy(locale);
+
   return (
     <main
       className="min-h-screen pb-32"
@@ -60,7 +67,7 @@ export default function OrderTrackPage() {
       <Suspense
         fallback={
           <div className="px-4 py-20 text-center text-sm text-gray-600">
-            読み込み中…
+            {t.pageLoading}
           </div>
         }
       >

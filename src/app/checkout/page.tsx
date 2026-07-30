@@ -28,7 +28,6 @@ import {
   TRACKED_ORDER_UPDATED_EVENT,
 } from "@/lib/recent-order-tracking";
 import { CartDrawer } from "@/components/CartDrawer";
-import { LanguageSwitcher } from "@/components/customer/LanguageSwitcher";
 import { formatNoodlePortionLineJa } from "@/lib/tsukemen-portion-pricing";
 import {
   formatGyozaServiceModePartsJa,
@@ -407,7 +406,7 @@ export default function CheckoutPage() {
     >
       <CartDrawer />
       <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4">
           <Link
             href={menuHrefForCustomerNavigation(tableLabel)}
             className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700 transition hover:text-emerald-800"
@@ -415,7 +414,6 @@ export default function CheckoutPage() {
             <ChevronLeft className="h-4 w-4" />
             {t.backToMenu}
           </Link>
-          <LanguageSwitcher />
         </div>
 
         <div className="overflow-hidden rounded-3xl border border-gray-100 bg-white/95 shadow-lg sm:rounded-[2rem]">
