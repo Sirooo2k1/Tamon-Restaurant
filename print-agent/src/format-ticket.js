@@ -256,7 +256,7 @@ function resolvePrintItemName(item) {
 const NOODLE_TEMP = new Set(["冷たい麺", "温かい麺"]);
 
 function splitDetails(c, { omitDrinkVariant = false, omitPortion = false } = {}) {
-  /** @type {{ label: string, priceVnd: number }[]} */
+  /** @type {{ label: string, priceVnd: number, flat?: boolean }[]} */
   const toppings = [];
   /** @type {string[]} */
   const notes = [];
@@ -265,9 +265,18 @@ function splitDetails(c, { omitDrinkVariant = false, omitPortion = false } = {})
 
   if (!c || typeof c !== "object") return { toppings, notes, noodleTemp };
 
+  // Gyoza takeaway: phí theo dòng (không × số lượng) — in cột giá như topping
+  const CONTAINER_FEE_VND = 20 * 200;
+  const BAG_FEE_VND = 3 * 200;
   if (c.serviceMode === "takeaway") {
-    notes.push("お持ち帰り・容器");
-    if (c.needsPlasticBag === true) notes.push("レジ袋");
+    toppings.push({
+      label: "お持ち帰り・容器",
+      priceVnd: CONTAINER_FEE_VND,
+      flat: true,
+    });
+    if (c.needsPlasticBag === true) {
+      toppings.push({ label: "レジ袋", priceVnd: BAG_FEE_VND, flat: true });
+    }
   } else if (c.serviceMode === "dine_in") {
     notes.push("店内");
   }
@@ -358,10 +367,11 @@ function pushItemBlock(lines, items, startIndex = 0) {
     }
 
     for (const t of toppings) {
+      const printVnd = t.flat ? t.priceVnd : t.priceVnd * qty;
       pushNamePriceWrapped(
         lines,
         `${detailPad}${DOT}${t.label}`,
-        t.priceVnd * qty
+        printVnd
       );
     }
     for (const note of notes) {
